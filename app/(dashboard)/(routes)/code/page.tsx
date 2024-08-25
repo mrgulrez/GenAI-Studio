@@ -18,9 +18,9 @@ import { Loader } from "@/components/loader";
 import { UserAvatar } from "@/components/user.avatar";
 import { BotAvatar } from "@/components/bot-avatar";
 import ReactMarkdown from "react-markdown";
+import { ReactNode } from "react";
+import React from "react";
 
-
-// Define the type for ChatCompletionMessageParam
 type ChatCompletionMessageParam = {
   role: "user" | "assistant" | "system";
   content: string;
@@ -135,27 +135,49 @@ export default function CodePage() {
               >
                 {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
                 <div className="flex-1 overflow-hidden">
-                  <ReactMarkdown 
+                  <ReactMarkdown
                     components={{
-                      pre: ({ node, ...props }) => (
-                        <div className="relative overflow-auto w-full my-2 bg-black/10 p-2 rounded-lg">
-                          <pre {...props} />
-                          <Button
-                            className="absolute top-2 right-2 bg-transparent text-blue-700 items-center align-middle space-x-4 hover:bg-black/5"
-                            onClick={() => onCopy(node.children[0].children[0].value)}
-                            size="icon"
-                          > 
-                            {copied === node.children[0].children[0].value ? (
-                              <Check className="h-4 w-4" />
-                            ) : (
-                              <Copy className="h-4 w-4" />
-                            )} 
-                          </Button>
-                        </div>
-                      ),
-                      code: ({ node, ...props }) => (
+                      pre: ({ children }: { children: ReactNode }) => {
+                        let codeContent = "";
+
+                        const childrenArray = React.Children.toArray(children);
+
+                        const codeElement = childrenArray.find(
+                          (child): child is React.ReactElement =>
+                            React.isValidElement(child) && child.type === "code"
+                        );
+
+                        if (codeElement) {
+                          const codeChildren = React.Children.toArray(
+                            codeElement.props.children
+                          );
+                          codeContent = codeChildren
+                            .map((child) =>
+                              typeof child === "string" ? child : ""
+                            )
+                            .join("");
+                        }
+
+                        return (
+                          <div className="relative overflow-auto w-full my-2 bg-black/10 p-2 rounded-lg">
+                            <pre>{children}</pre>
+                            <Button
+                              className="absolute top-2 right-2 bg-transparent text-blue-700 items-center align-middle space-x-4 hover:bg-black/5"
+                              onClick={() => onCopy(codeContent)}
+                              size="icon"
+                            >
+                              {copied === codeContent ? (
+                                <Check className="h-4 w-4" />
+                              ) : (
+                                <Copy className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        );
+                      },
+                      code: (props: React.HTMLProps<HTMLElement>) => (
                         <code className="rounded-lg p-1" {...props} />
-                      )
+                      ),
                     }}
                     className="text-sm overflow-hidden leading-7"
                   >

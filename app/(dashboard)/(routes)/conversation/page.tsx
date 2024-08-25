@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import * as z from "zod";
 import { useState } from "react";
@@ -17,6 +17,7 @@ import { Empty } from "@/components/empty";
 import { Loader } from "@/components/loader";
 import { UserAvatar } from "@/components/user.avatar";
 import { BotAvatar } from "@/components/bot-avatar";
+import ReactMarkdown from "react-markdown";
 
 // Define the type for ChatCompletionMessageParam
 type ChatCompletionMessageParam = {
@@ -25,7 +26,6 @@ type ChatCompletionMessageParam = {
 };
 
 export default function ConversationPage() {
-
   const router = useRouter();
   const [messages, setMessages] = useState<ChatCompletionMessageParam[]>([]);
 
@@ -45,15 +45,19 @@ export default function ConversationPage() {
         content: values.prompt,
       };
       const newMessages = [...messages, userMessage];
-      
+
       const response = await axios.post("/api/conversation", {
-        messages: newMessages.map(msg => ({
+        messages: newMessages.map((msg) => ({
           role: msg.role,
-          content: msg.content
+          content: msg.content,
         })),
       });
 
-      setMessages((current) => [...current, userMessage, { role: "assistant", content: response.data }]);
+      setMessages((current) => [
+        ...current,
+        userMessage,
+        { role: "assistant", content: response.data },
+      ]);
       form.reset();
     } catch (error: any) {
       console.error("[ConversationPage] Error:", error);
@@ -92,7 +96,11 @@ export default function ConversationPage() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="col-span-12 lg:col-span-2 w-full" disabled={isLoading}>
+            <Button
+              type="submit"
+              className="col-span-12 lg:col-span-2 w-full"
+              disabled={isLoading}
+            >
               Generate
             </Button>
           </form>
@@ -103,17 +111,30 @@ export default function ConversationPage() {
               <Loader />
             </div>
           )}
-          {messages.length === 0 && !isLoading && (<Empty label="No conversation Started" />)}
+          {messages.length === 0 && !isLoading && (
+            <Empty label="No conversation Started" />
+          )}
           <div className="flex flex-col-reverse gap-y-4">
-            {messages.map((message, index) => ( 
-              <div key={index} className={cn(
-                "p-8 w-full flex items-start gap-x-8 rounded-lg",
-                message.role === "user" ? "bg-white border border-black/10" : "bg-muted"
-              )}>
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={cn(
+                  "p-8 w-full flex items-start gap-x-8 rounded-lg",
+                  message.role === "user"
+                    ? "bg-white border border-black/10"
+                    : "bg-muted"
+                )}
+              >
                 {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
-                <p className="text-sm">
-                {message.content}
-                </p>
+                <ReactMarkdown
+                  className="prose"
+                  components={{
+                    p: ({ node, ...props }) => <p {...props} />,
+                    code: ({ node, ...props }) => <code {...props} />,
+                  }}
+                  
+                >{message.content}
+                </ReactMarkdown>
               </div>
             ))}
           </div>
