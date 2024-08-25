@@ -1,8 +1,8 @@
-### AI-Powered Platform
+# AI-Powered Platform
 ## Overview
 This AI-powered platform integrates various services to deliver a comprehensive solution for generating text, code, images, music, and videos. It features robust API management, a user-friendly interface for tracking usage, premium feature access through a Pro modal, and seamless payment processing with Stripe integration. The platform is designed with a strong emphasis on error handling and customer support.
 
-# Features
+### Features
 1. Conversation AI API (OpenAI)
 Description: Utilizes OpenAI's API to generate and manage conversational AI interactions.
 Key Features:

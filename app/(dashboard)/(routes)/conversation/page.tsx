@@ -11,14 +11,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { FormField, FormItem, Form, FormControl } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import  { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import axios from "axios";
-import { ChatCompletionMessageParam } from "openai/resources/chat";
 import { Empty } from "@/components/empty";
 import { Loader } from "@/components/loader";
 import { UserAvatar } from "@/components/user.avatar";
 import { BotAvatar } from "@/components/bot-avatar";
 
+// Define the type for ChatCompletionMessageParam
+type ChatCompletionMessageParam = {
+  role: "user" | "assistant" | "system";
+  content: string;
+};
 
 export default function ConversationPage() {
 
@@ -36,7 +40,7 @@ export default function ConversationPage() {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const userMessage = {
+      const userMessage: ChatCompletionMessageParam = {
         role: "user",
         content: values.prompt,
       };
