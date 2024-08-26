@@ -132,6 +132,12 @@ export default function CodePage() {
                             disabled={isLoading}
                             placeholder="Describe the code you want to generate..."
                             {...field}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault(); 
+                                form.handleSubmit(onSubmit)(); 
+                              }
+                            }}
                           />
                         </FormControl>
                       </FormItem>

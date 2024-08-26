@@ -10,6 +10,8 @@ import {
   VideoIcon,
   Music,
   CodeIcon,
+  ImagePlusIcon,
+  ImagePlayIcon,
   Settings,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -53,6 +55,18 @@ const routes = [
     icon: VideoIcon,
     href: "/video",
     color: "text-orange-700",
+  },
+  {
+    name: "Image to Image",
+    icon: ImagePlusIcon,
+    href: "/image2image",
+    color: "text-green-700",
+  },
+  {
+    name: "Image to Video",
+    icon: ImagePlayIcon,
+    href: "/image2video",
+    color: "text-yellow-600",
   },
   {
     name: "Settings",
