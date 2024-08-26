@@ -159,7 +159,9 @@ export default function CodePage() {
                       className="bg-green-700 hover:bg-green-800"
                     >
                       {isLoading ? (
-                        <Loader />
+                        <div className="animate-spin">
+                          ✨
+                        </div>
                       ) : (
                         <Send className="w-4 h-4 mr-2" />
                       )}
