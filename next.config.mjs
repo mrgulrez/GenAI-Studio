@@ -1,4 +1,8 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+    // domains: [
+    //     "oaidalleap........."
+    // ]
+};
 
 export default nextConfig;

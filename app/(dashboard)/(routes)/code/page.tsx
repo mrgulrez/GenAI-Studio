@@ -4,7 +4,7 @@ import * as z from "zod";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Heading } from "@/components/heading";
-import { MessageCircle, Copy, Check } from "lucide-react";
+import { MessageCircle, Copy, Check, Code } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { formSchema } from "./constants";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -79,7 +79,7 @@ export default function CodePage() {
       <Heading
         title="Code Generation"
         description="Generate code using descriptive text."
-        icon={MessageCircle}
+        icon={Code}
         iconColor="text-green-700"
         bgColor="bg-green-700/10"
       />
@@ -137,7 +137,7 @@ export default function CodePage() {
                 <div className="flex-1 overflow-hidden">
                   <ReactMarkdown
                     components={{
-                      pre: ({ children }: { children: ReactNode }) => {
+                      pre: ({ children }) => {
                         let codeContent = "";
 
                         const childrenArray = React.Children.toArray(children);

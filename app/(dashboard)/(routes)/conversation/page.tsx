@@ -4,7 +4,7 @@ import * as z from "zod";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Heading } from "@/components/heading";
-import { MessageCircle } from "lucide-react";
+import { MessageSquareIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { formSchema } from "./constants";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -71,7 +71,7 @@ export default function ConversationPage() {
       <Heading
         title="Conversation"
         description="Our most advanced Conversation model"
-        icon={MessageCircle}
+        icon={MessageSquareIcon}
         iconColor="text-violet-500"
         bgColor="bg-violet-500/10"
       />

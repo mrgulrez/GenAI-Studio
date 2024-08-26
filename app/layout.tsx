@@ -13,7 +13,7 @@ import { dark } from '@clerk/themes'
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "AI SaaS",
+  title: "GenAI Studio",
   description: "Created by Gulrez Alam",
 };
 
