@@ -4,12 +4,11 @@ import * as z from "zod";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Heading } from "@/components/heading";
-import { MessageCircle, Copy, Check, Code } from "lucide-react";
+import { MessageCircle, Copy, Check, Code, Send, Trash, Download } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { formSchema } from "./constants";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormField, FormItem, Form, FormControl } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import axios from "axios";
@@ -18,8 +17,10 @@ import { Loader } from "@/components/loader";
 import { UserAvatar } from "@/components/user.avatar";
 import { BotAvatar } from "@/components/bot-avatar";
 import ReactMarkdown from "react-markdown";
-import { ReactNode } from "react";
 import React from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 
 type ChatCompletionMessageParam = {
   role: "user" | "assistant" | "system";
@@ -30,6 +31,7 @@ export default function CodePage() {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatCompletionMessageParam[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
+  const [latestCode, setLatestCode] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -55,11 +57,17 @@ export default function CodePage() {
         })),
       });
 
+      const assistantMessage: ChatCompletionMessageParam = {
+        role: "assistant",
+        content: response.data,
+      };
+
       setMessages((current) => [
         ...current,
         userMessage,
-        { role: "assistant", content: response.data },
+        assistantMessage,
       ]);
+      setLatestCode(response.data); // Store the latest generated code
       form.reset();
     } catch (error: any) {
       console.error("[CodePage] Error:", error);
@@ -74,121 +82,201 @@ export default function CodePage() {
     setTimeout(() => setCopied(null), 2000);
   };
 
+  const onClear = () => {
+    setMessages([]);
+    setLatestCode(null); // Clear the latest code
+    form.reset();
+  };
+
+  const onDownload = () => {
+    const content = messages
+      .map((msg) => `${msg.role.toUpperCase()}:\n${msg.content}\n\n`)
+      .join("");
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "code_conversation.txt";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="mb-8 space-y-4">
+    <div className="container mx-auto p-4">
       <Heading
-        title="Code Generation"
-        description="Generate code using descriptive text."
+        title="AI Code Assistant"
+        description="Generate, analyze, and optimize code using AI."
         icon={Code}
         iconColor="text-green-700"
         bgColor="bg-green-700/10"
       />
-      <div className="px-4 lg:px-8">
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="rounded-lg border w-full p-4 px-3 md:px-6 focus-within:shadow-sm grid grid-cols-12 gap-2"
-          >
-            <FormField
-              name="prompt"
-              render={({ field }) => (
-                <FormItem className="col-span-12 lg:col-span-10">
-                  <FormControl className="m-0 p-0">
-                    <Input
-                      className="border-0 outline-none focus-visible:ring-0 focus-visible:ring-transparent"
+      <Tabs defaultValue="generate" className="mt-8">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="generate">Generate Code</TabsTrigger>
+          <TabsTrigger value="chat">Chat History</TabsTrigger>
+        </TabsList>
+        <TabsContent value="generate">
+          <Card>
+            <CardContent className="pt-6">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    name="prompt"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Textarea
+                            className="min-h-[100px] resize"
+                            disabled={isLoading}
+                            placeholder="Describe the code you want to generate..."
+                            {...field}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex justify-end space-x-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={onClear}
+                      disabled={isLoading || messages.length === 0}
+                    >
+                      <Trash className="w-4 h-4 mr-2" />
+                      Clear
+                    </Button>
+                    <Button
+                      type="submit"
                       disabled={isLoading}
-                      placeholder="Simple toggle button using react Hooks"
-                      {...field}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <Button
-              type="submit"
-              className="col-span-12 lg:col-span-2 w-full"
-              disabled={isLoading}
-            >
-              Generate
-            </Button>
-          </form>
-        </Form>
-        <div className="space-y-4 mt-4">
-          {isLoading && (
-            <div className="p-8 rounded-lg w-full flex items-center justify-center bg-muted">
-              <Loader />
-            </div>
-          )}
-          {messages.length === 0 && !isLoading && (
-            <Empty label="No conversation started" />
-          )}
-          <div className="flex flex-col-reverse gap-y-4">
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={cn(
-                  "p-8 w-full flex items-start gap-x-8 rounded-lg",
-                  message.role === "user"
-                    ? "bg-white border border-black/10"
-                    : "bg-muted"
-                )}
-              >
-                {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
-                <div className="flex-1 overflow-hidden">
-                  <ReactMarkdown
-                    components={{
-                      pre: ({ children }) => {
-                        let codeContent = "";
+                      className="bg-green-700 hover:bg-green-800"
+                    >
+                      {isLoading ? (
+                        <Loader />
+                      ) : (
+                        <Send className="w-4 h-4 mr-2" />
+                      )}
+                      Generate
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
 
-                        const childrenArray = React.Children.toArray(children);
-
-                        const codeElement = childrenArray.find(
-                          (child): child is React.ReactElement =>
-                            React.isValidElement(child) && child.type === "code"
-                        );
-
-                        if (codeElement) {
-                          const codeChildren = React.Children.toArray(
-                            codeElement.props.children
-                          );
-                          codeContent = codeChildren
-                            .map((child) =>
-                              typeof child === "string" ? child : ""
-                            )
-                            .join("");
-                        }
-
-                        return (
-                          <div className="relative overflow-auto w-full my-2 bg-black/10 p-2 rounded-lg">
-                            <pre>{children}</pre>
-                            <Button
-                              className="absolute top-2 right-2 bg-transparent text-blue-700 items-center align-middle space-x-4 hover:bg-black/5"
-                              onClick={() => onCopy(codeContent)}
-                              size="icon"
-                            >
-                              {copied === codeContent ? (
-                                <Check className="h-4 w-4" />
-                              ) : (
-                                <Copy className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        );
-                      },
-                      code: (props: React.HTMLProps<HTMLElement>) => (
-                        <code className="rounded-lg p-1" {...props} />
-                      ),
-                    }}
-                    className="text-sm overflow-hidden leading-7"
+          {/* Display only the current generated code */}
+          {latestCode && (
+            <Card className="mt-8">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <div className="flex items-center">
+                    <BotAvatar />
+                    <span className="ml-2 font-semibold text-green-700">
+                      Generated Code
+                    </span>
+                  </div>
+                  <Button
+                    className="bg-blue-500 hover:bg-blue-600 text-white"
+                    onClick={() => onCopy(latestCode)}
+                    size="sm"
                   >
-                    {message.content || ""}
-                  </ReactMarkdown>
+                    {copied === latestCode ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
                 </div>
+                <ReactMarkdown
+                  components={{
+                    code: (props) => (
+                      <code className="block bg-gray-800 text-white p-4 rounded mt-2" {...props} />
+                    ),
+                  }}
+                  className="text-sm leading-relaxed"
+                >
+                  {latestCode || ""}
+                </ReactMarkdown>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="chat">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                {messages.length === 0 ? (
+                  <Empty label="No conversation started" />
+                ) : (
+                  <>
+                    <div className="flex justify-end mb-4">
+                      <Button onClick={onDownload} variant="outline">
+                        <Download className="w-4 h-4 mr-2" />
+                        Download Chat
+                      </Button>
+                    </div>
+                    <div className="space-y-4">
+                      {[...messages].reverse().map((message, index) => (
+                        <div
+                          key={index}
+                          className={cn(
+                            "p-4 rounded-lg",
+                            message.role === "user"
+                              ? "bg-blue-100 text-blue-900"
+                              : "bg-gray-100 text-gray-900"
+                          )}
+                        >
+                          <div className="flex items-center space-x-2 mb-2">
+                            {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
+                            <span className="font-semibold">
+                              {message.role === "user" ? "You" : "AI Assistant"}
+                            </span>
+                          </div>
+                          <ReactMarkdown
+                            components={{
+                              pre: ({ children }) => {
+                                let codeContent = "";
+                                const childrenArray = React.Children.toArray(children);
+                                const codeElement = childrenArray.find(
+                                  (child): child is React.ReactElement =>
+                                    React.isValidElement(child) && child.type === "code"
+                                );
+                                if (codeElement) {
+                                  const codeChildren = React.Children.toArray(
+                                    codeElement.props.children
+                                  );
+                                  codeContent = codeChildren
+                                    .map((child) =>
+                                      typeof child === "string" ? child : ""
+                                    )
+                                    .join("");
+                                }
+                                return (
+                                  <div className="relative bg-gray-800 text-white p-4 rounded-md my-2">
+                                    <pre className="overflow-x-auto">{children}</pre>
+                                  </div>
+                                );
+                              },
+                              code: (props) => (
+                                <code className="bg-gray-200 text-gray-900 px-1 py-0.5 rounded" {...props} />
+                              ),
+                            }}
+                            className="text-sm leading-relaxed"
+                          >
+                            {message.content || ""}
+                          </ReactMarkdown>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

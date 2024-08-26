@@ -30,29 +30,29 @@ const routes = [
     color: "text-violet-500",
   },
   {
-    name: "Code Generation",
+    name: "Text to Code",
     icon: CodeIcon,
     href: "/code",
     color: "text-green-700",
   },
 
   {
-    name: "Image Generation",
+    name: "Text to Image",
     icon: ImageIcon,
     href: "/image",
     color: "text-pink-700",
   },
   {
-    name: "Video Generation",
-    icon: VideoIcon,
-    href: "/video",
-    color: "text-orange-700",
-  },
-  {
-    name: "Audio Generation",
+    name: "Text to Audio",
     icon: Music,
     href: "/music",
     color: "text-emerald-700",
+  },
+  {
+    name: "Text to Video",
+    icon: VideoIcon,
+    href: "/video",
+    color: "text-orange-700",
   },
   {
     name: "Settings",
