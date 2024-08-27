@@ -235,7 +235,7 @@ export default function LandingPage() {
             className="p-3 rounded-lg border-2 border-gray-300 mb-4 md:mb-0 md:mr-4 w-full md:w-auto"
           />
           <Button className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-6 rounded-lg shadow-md transition-transform duration-300 transform hover:scale-110 hover:shadow-xl">
-            Subscribe
+            Subscribe (Coming Soon)
           </Button>
         </form>
       </div>
