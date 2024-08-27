@@ -1,30 +1,32 @@
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { 
-  MessageSquare, 
-  Code, 
-  Image, 
-  Music, 
-  Video, 
-  ImagePlus, 
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import {
+  MessageSquare,
+  Code,
+  Image,
+  Music,
+  Video,
+  ImagePlus,
   Film,
-  ArrowRightCircle 
-} from 'lucide-react';
+  ArrowRightCircle,
+} from "lucide-react";
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4 relative">
       {/* Background Video */}
       <div className="absolute inset-0 overflow-hidden z-0">
-        <video
-          autoPlay
-          loop
-          muted
-          className="min-w-full min-h-full object-cover opacity-20"
-        >
-          <source src="/path-to-your-video.mp4" type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
+        {typeof window !== "undefined" && (
+          <video
+            autoPlay
+            loop
+            muted
+            className="min-w-full min-h-full object-cover opacity-20"
+          >
+            <source src="/videos/background.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        )}
       </div>
 
       {/* Hero Section */}
@@ -33,8 +35,8 @@ export default function LandingPage() {
           Welcome to GenAI Studio
         </h1>
         <p className="text-lg text-gray-600 mb-8">
-          Transform your creative ideas into reality with our cutting-edge AI tools.
-          Sign up today and start exploring the power of generative AI.
+          Transform your creative ideas into reality with our cutting-edge AI
+          tools. Sign up today and start exploring the power of generative AI.
         </p>
 
         {/* Call to Action Buttons */}
@@ -62,13 +64,33 @@ export default function LandingPage() {
         </p>
         <div className="flex flex-col md:flex-row justify-center items-center space-y-6 md:space-y-0 md:space-x-8">
           {[
-            { step: "Sign Up", description: "Create an account to access all our AI-powered tools.", icon: <ArrowRightCircle size={40} className="text-blue-500" /> },
-            { step: "Choose a Tool", description: "Select from a variety of generative AI tools to suit your needs.", icon: <ArrowRightCircle size={40} className="text-blue-500" /> },
-            { step: "Generate & Customize", description: "Generate content, customize it, and bring your ideas to life.", icon: <ArrowRightCircle size={40} className="text-blue-500" /> },
+            {
+              step: "Sign Up",
+              description:
+                "Create an account to access all our AI-powered tools.",
+              icon: <ArrowRightCircle size={40} className="text-blue-500" />,
+            },
+            {
+              step: "Choose a Tool",
+              description:
+                "Select from a variety of generative AI tools to suit your needs.",
+              icon: <ArrowRightCircle size={40} className="text-blue-500" />,
+            },
+            {
+              step: "Generate & Customize",
+              description:
+                "Generate content, customize it, and bring your ideas to life.",
+              icon: <ArrowRightCircle size={40} className="text-blue-500" />,
+            },
           ].map((item, index) => (
-            <div key={index} className="bg-white shadow-md rounded-lg p-6 w-full md:w-1/3 transform transition-transform duration-300 hover:scale-105 hover:shadow-xl">
+            <div
+              key={index}
+              className="bg-white shadow-md rounded-lg p-6 w-full md:w-1/3 transform transition-transform duration-300 hover:scale-105 hover:shadow-xl"
+            >
               <div className="flex justify-center mb-4">{item.icon}</div>
-              <h3 className="text-xl font-medium text-gray-700 mb-2">{item.step}</h3>
+              <h3 className="text-xl font-medium text-gray-700 mb-2">
+                {item.step}
+              </h3>
               <p className="text-gray-500">{item.description}</p>
             </div>
           ))}
@@ -81,24 +103,64 @@ export default function LandingPage() {
           Why Choose GenAI Studio?
         </h2>
         <p className="text-gray-600 mb-6">
-          Explore our comprehensive suite of AI tools that cater to all your creative needs.
-          From text to multimedia, we've got you covered.
+          Explore our comprehensive suite of AI tools that cater to all your
+          creative needs. From text to multimedia, we&apos;ve got you covered.
         </p>
 
         {/* Features List with Lucide Icons */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {[
-            { title: 'Conversation', description: 'Engage in dynamic conversations powered by our advanced AI chat systems.', icon: <MessageSquare size={40} className="text-blue-500" /> },
-            { title: 'Text to Code Generation', description: 'Effortlessly convert text descriptions into working code with our AI coding assistant.', icon: <Code size={40} className="text-green-500" /> },
-            { title: 'Text to Image Generation', description: 'Transform your text prompts into stunning visuals with our text-to-image generation tool.', icon: <Image size={40} className="text-purple-500" /> },
-            { title: 'Text to Audio Generation', description: 'Convert text into lifelike audio, perfect for podcasts, audiobooks, and more.', icon: <Music size={40} className="text-red-500" /> },
-            { title: 'Text to Video Generation', description: 'Create engaging videos directly from textual descriptions with our innovative AI tool.', icon: <Video size={40} className="text-orange-500" /> },
-            { title: 'Image to Image Generation', description: 'Enhance or modify existing images with our AI-driven image-to-image generation technology.', icon: <ImagePlus size={40} className="text-yellow-500" /> },
-            { title: 'Image to Video Generation', description: 'Seamlessly convert images into videos, bringing your static visuals to life.', icon: <Film size={40} className="text-teal-500" /> },
+            {
+              title: "Conversation",
+              description:
+                "Engage in dynamic conversations powered by our advanced AI chat systems.",
+              icon: <MessageSquare size={40} className="text-blue-500" />,
+            },
+            {
+              title: "Text to Code Generation",
+              description:
+                "Effortlessly convert text descriptions into working code with our AI coding assistant.",
+              icon: <Code size={40} className="text-green-500" />,
+            },
+            {
+              title: "Text to Image Generation",
+              description:
+                "Transform your text prompts into stunning visuals with our text-to-image generation tool.",
+              icon: <Image size={40} className="text-purple-500" />,
+            },
+            {
+              title: "Text to Audio Generation",
+              description:
+                "Convert text into lifelike audio, perfect for podcasts, audiobooks, and more.",
+              icon: <Music size={40} className="text-red-500" />,
+            },
+            {
+              title: "Text to Video Generation",
+              description:
+                "Create engaging videos directly from textual descriptions with our innovative AI tool.",
+              icon: <Video size={40} className="text-orange-500" />,
+            },
+            {
+              title: "Image to Image Generation",
+              description:
+                "Enhance or modify existing images with our AI-driven image-to-image generation technology.",
+              icon: <ImagePlus size={40} className="text-yellow-500" />,
+            },
+            {
+              title: "Image to Video Generation",
+              description:
+                "Seamlessly convert images into videos, bringing your static visuals to life.",
+              icon: <Film size={40} className="text-teal-500" />,
+            },
           ].map((feature, index) => (
-            <div key={index} className="bg-white shadow-md rounded-lg p-6 transform transition-transform duration-300 hover:scale-105 hover:shadow-xl">
+            <div
+              key={index}
+              className="bg-white shadow-md rounded-lg p-6 transform transition-transform duration-300 hover:scale-105 hover:shadow-xl"
+            >
               <div className="flex justify-center mb-4">{feature.icon}</div>
-              <h3 className="text-xl font-medium text-gray-700 mb-2 transition-colors duration-300 hover:text-blue-500">{feature.title}</h3>
+              <h3 className="text-xl font-medium text-gray-700 mb-2 transition-colors duration-300 hover:text-blue-500">
+                {feature.title}
+              </h3>
               <p className="text-gray-500">{feature.description}</p>
             </div>
           ))}
@@ -118,29 +180,53 @@ export default function LandingPage() {
           What Our Users Say
         </h2>
         <p className="text-gray-600 mb-6">
-          Hear from some of our satisfied users who have transformed their creative processes with GenAI Studio.
+          Hear from some of our satisfied users who have transformed their
+          creative processes with GenAI Studio.
         </p>
         <div className="flex flex-col md:flex-row justify-center items-center space-y-6 md:space-y-0 md:space-x-8">
           {[
-            { quote: "GenAI Studio has revolutionized the way I create content. The tools are easy to use and incredibly powerful!", name: "Jane Doe", title: "Content Creator" },
-            { quote: "The AI-driven image generation tool is my favorite. It helps me create stunning visuals in minutes!", name: "John Smith", title: "Graphic Designer" },
-            { quote: "As a developer, the text to code generation tool saves me a lot of time. Highly recommended!", name: "Emily Brown", title: "Software Engineer" },
+            {
+              quote:
+                "GenAI Studio has revolutionized the way I create content. The tools are easy to use and incredibly powerful!",
+              name: "Jane Doe",
+              title: "Content Creator",
+            },
+            {
+              quote:
+                "The AI-driven image generation tool is my favorite. It helps me create stunning visuals in minutes!",
+              name: "John Smith",
+              title: "Graphic Designer",
+            },
+            {
+              quote:
+                "As a developer, the text to code generation tool saves me a lot of time. Highly recommended!",
+              name: "Emily Brown",
+              title: "Software Engineer",
+            },
           ].map((testimonial, index) => (
-            <div key={index} className="bg-white shadow-md rounded-lg p-6 w-full md:w-1/3 transform transition-transform duration-300 hover:scale-105 hover:shadow-xl">
-              <p className="text-gray-500">"{testimonial.quote}"</p>
-              <h3 className="mt-4 text-sm font-medium text-gray-700">- {testimonial.name}, {testimonial.title}</h3>
+            <div
+              key={index}
+              className="bg-white shadow-md rounded-lg p-6 w-full md:w-1/3 transform transition-transform duration-300 hover:scale-105 hover:shadow-xl"
+            >
+              <p className="text-gray-500 italic">
+                &quot;{testimonial.quote}&quot;
+              </p>
+              <h3 className="mt-4 text-sm font-medium text-gray-700">
+                - {testimonial.name}, {testimonial.title}
+              </h3>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Call to Action Section */}
+      {/* Action Section */}
       <div className="mt-12 max-w-4xl text-center relative z-10">
         <h2 className="text-2xl font-semibold text-gray-800 mb-4 transition-colors duration-300 hover:text-blue-600">
           Ready to Get Started?
         </h2>
         <p className="text-gray-600 mb-6">
-          Subscribe to our newsletter to get the latest updates and features directly to your inbox.
+          Subscribe to our newsletter to get the latest updates and features
+          directly to your inbox.
         </p>
         <form className="flex flex-col md:flex-row items-center justify-center">
           <input
@@ -149,7 +235,7 @@ export default function LandingPage() {
             className="p-3 rounded-lg border-2 border-gray-300 mb-4 md:mb-0 md:mr-4 w-full md:w-auto"
           />
           <Button className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-6 rounded-lg shadow-md transition-transform duration-300 transform hover:scale-110 hover:shadow-xl">
-            Subscribe (Coming Soon)
+            Subscribe
           </Button>
         </form>
       </div>
