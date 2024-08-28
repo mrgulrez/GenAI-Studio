@@ -1,11 +1,10 @@
-"use client";
-
+"use client"
 import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
-import { Music, Loader2, X, AlertTriangle } from "lucide-react";
+import { Music, Loader2 } from "lucide-react";
 import { Heading } from "@/components/heading";
 import {
   Form,
@@ -35,9 +34,7 @@ interface MusicOutput {
 
 export default function MusicPage() {
   const router = useRouter();
-  const [musicOutputs, setMusicOutputs] = useState<Record<string, MusicOutput>>(
-    {}
-  );
+  const [musicOutputs, setMusicOutputs] = useState<Record<string, MusicOutput>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [selectAll, setSelectAll] = useState(false);
   const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
@@ -111,7 +108,6 @@ export default function MusicPage() {
       });
     } finally {
       setIsLoading(false);
-      router.refresh();
     }
   };
 
@@ -248,7 +244,7 @@ export default function MusicPage() {
               </h3>
               {output.error ? (
                 <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
+                  {/* <AlertTriangle className="h-4 w-4" /> */}
                   <AlertDescription>{output.error}</AlertDescription>
                 </Alert>
               ) : output.audio ? (

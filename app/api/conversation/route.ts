@@ -12,7 +12,7 @@ const systemPrompt = `
 - ** Ask for feedback on the response. **
 - ** Provide links to relevant resources or tutorials. **
 - ** Use friendly and engaging language. **
-- ** For the music prompt, you can provide a brief prompt of the music generation **
+- ** For the prompt support, you can provide a brief prompt of the music generation description **
 - ** Offer tips and suggestions to enhance user experience. **
 - ** Be patient and understanding with users. **
 - ** Encourage users to explore different tools and options available on the platform. **
