@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -35,13 +35,12 @@ interface MusicOutput {
 
 export default function MusicPage() {
   const router = useRouter();
-  const [musicOutputs, setMusicOutputs] = useState<Record<string, MusicOutput>>({});
+  const [musicOutputs, setMusicOutputs] = useState<Record<string, MusicOutput>>(
+    {}
+  );
   const [isLoading, setIsLoading] = useState(false);
+  const [selectAll, setSelectAll] = useState(false);
   const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
-
-  useEffect(() => {
-    console.log("MUSIC_MODELS:", MUSIC_MODELS);
-  }, []);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -50,6 +49,18 @@ export default function MusicPage() {
       models: [],
     },
   });
+
+  const toggleSelectAll = () => {
+    if (selectAll) {
+      form.setValue("models", []);
+    } else {
+      form.setValue(
+        "models",
+        MUSIC_MODELS.map((model) => model.id)
+      );
+    }
+    setSelectAll(!selectAll);
+  };
 
   const onSubmit = async (values: FormValues) => {
     try {
@@ -86,7 +97,8 @@ export default function MusicPage() {
       } else {
         toast({
           title: "Music generation failed",
-          description: "Failed to generate music for all selected models. Please try again.",
+          description:
+            "Failed to generate music for all selected models. Please try again.",
           variant: "destructive",
         });
       }
@@ -145,12 +157,20 @@ export default function MusicPage() {
                 name="models"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Select Models ({MUSIC_MODELS.length} available)</FormLabel>
+                    <FormLabel>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          checked={selectAll}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                        <span>
+                          Select All Models ({MUSIC_MODELS.length} available)
+                        </span>
+                      </div>
+                    </FormLabel>
+
                     <FormControl>
-                      <ScrollArea 
-                        className="w-full rounded-md border p-4" 
-                        style={{height: `${Math.min(200, MUSIC_MODELS.length * 60)}px`}}
-                      >
+                      <ScrollArea className="h-[200px] w-full rounded-md border p-4">
                         {MUSIC_MODELS.map((model) => (
                           <div
                             key={model.id}
@@ -194,7 +214,9 @@ export default function MusicPage() {
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Composing...
+                    {" "}
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
+                    Composing...
                   </>
                 ) : (
                   <>
@@ -221,7 +243,8 @@ export default function MusicPage() {
           {Object.entries(musicOutputs).map(([modelId, output]) => (
             <div key={modelId} className="mb-6 p-4 bg-gray-100 rounded-lg">
               <h3 className="text-lg font-semibold mb-2">
-                {MUSIC_MODELS.find((m) => m.id === modelId)?.name || "Unknown Model"}
+                {MUSIC_MODELS.find((m) => m.id === modelId)?.name ||
+                  "Unknown Model"}
               </h3>
               {output.error ? (
                 <Alert variant="destructive">
@@ -253,14 +276,16 @@ export default function MusicPage() {
                     >
                       <option value="0.25">0.25x</option>
                       <option value="0.5">0.5x</option>
-                      <option value="1" selected>1x (Normal)</option>
+                      <option value="1" selected>
+                        1x (Normal)
+                      </option>
                       <option value="1.5">1.5x</option>
                       <option value="2">2x</option>
                     </select>
                     <a
                       href={output.audio}
                       download={`composition_${modelId.replace("/", "_")}.wav`}
-                      className="text-blue-500 hover:text-blue-700 font-semibold"
+                      className="text-blue-600 underline"
                     >
                       Download
                     </a>
@@ -270,18 +295,7 @@ export default function MusicPage() {
             </div>
           ))}
         </CardContent>
-        {Object.keys(musicOutputs).length > 0 && (
-          <CardFooter>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => setMusicOutputs({})}
-            >
-              <X className="mr-2 h-4 w-4" />
-              Clear All Compositions
-            </Button>
-          </CardFooter>
-        )}
+        <CardFooter></CardFooter>
       </Card>
     </div>
   );
