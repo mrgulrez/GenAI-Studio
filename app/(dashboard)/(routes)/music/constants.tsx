@@ -10,18 +10,7 @@ export const MUSIC_MODELS = [
     id: "facebook/musicgen-stereo-small",
     name: "MusicGen Stereo Small",
     description: "Faster stereo music generation with good quality",
-  },
-  {
-    id: "facebook/musicgen-medium",
-    name: "MusicGen Medium",
-    description: "Balanced performance for various music styles",
-  },
-  {
-    id: "facebook/musicgen-stereo-medium",
-    name: "MusicGen Stereo Medium",
-    description:
-      "High-quality stereo music generation with a balanced performance",
-  },
+  }
 ];
 
 export const formSchema = z.object({
