@@ -1,54 +1,112 @@
 "use client";
 
-import * as z from "zod";
-import { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Heading } from "@/components/heading";
-import { Music } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { formSchema } from "./constants";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FormField, FormItem, Form, FormControl } from "@/components/ui/form";
-import { Button } from "@/components/ui/button";
 import axios from "axios";
-import { Empty } from "@/components/empty";
-import { Loader } from "@/components/loader";
+import { Music, Loader2, X, AlertTriangle } from "lucide-react";
+import { Heading } from "@/components/heading";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+} from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Empty } from "@/components/empty";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MUSIC_MODELS, formSchema } from "./constants";
+import { z } from "zod";
+import { Loader } from "@/components/loader";
+
+type FormValues = z.infer<typeof formSchema>;
+
+interface MusicOutput {
+  audio: string | null;
+  error: string | null;
+}
 
 export default function MusicPage() {
   const router = useRouter();
-  const [music, setMusic] = useState<string>();
+  const [musicOutputs, setMusicOutputs] = useState<Record<string, MusicOutput>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  useEffect(() => {
+    console.log("MUSIC_MODELS:", MUSIC_MODELS);
+  }, []);
+
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       prompt: "",
+      models: [],
     },
   });
 
-  const isLoading = form.formState.isSubmitting;
-
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: FormValues) => {
     try {
-      setMusic(undefined);
-      const response = await axios.post("/api/music", values);
-      setMusic(response.data.audio);
-      form.reset();
-      toast({
-        title: "Music generated successfully",
-        description: "Your music is ready to play!",
+      setIsLoading(true);
+      setMusicOutputs({});
+      const responses = await Promise.all(
+        values.models.map((modelId) =>
+          axios
+            .post("/api/music", { prompt: values.prompt, model: modelId })
+            .then((response) => ({ modelId, data: response.data, error: null }))
+            .catch((error) => ({
+              modelId,
+              data: null,
+              error: error.response?.data?.error || "Failed to generate music",
+            }))
+        )
+      );
+
+      const newOutputs: Record<string, MusicOutput> = {};
+      responses.forEach(({ modelId, data, error }) => {
+        newOutputs[modelId] = {
+          audio: data?.audio || null,
+          error: error,
+        };
       });
-    } catch (error: any) {
+      setMusicOutputs(newOutputs);
+
+      const successCount = responses.filter((r) => !r.error).length;
+      if (successCount > 0) {
+        toast({
+          title: "Music generation complete",
+          description: `Successfully generated music for ${successCount} out of ${values.models.length} models.`,
+        });
+      } else {
+        toast({
+          title: "Music generation failed",
+          description: "Failed to generate music for all selected models. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
       console.error("[MusicPage] Error:", error);
       toast({
         title: "Error",
-        description: "Failed to generate music. Please try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
+      setIsLoading(false);
       router.refresh();
+    }
+  };
+
+  const handlePlaybackRateChange = (modelId: string, rate: number) => {
+    const audioElement = audioRefs.current[modelId];
+    if (audioElement) {
+      audioElement.playbackRate = rate;
     }
   };
 
@@ -64,24 +122,66 @@ export default function MusicPage() {
       <Card className="mt-8">
         <CardContent className="pt-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
+                control={form.control}
                 name="prompt"
                 render={({ field }) => (
                   <FormItem>
+                    <FormLabel>Prompt</FormLabel>
                     <FormControl>
                       <Textarea
                         className="min-h-[100px] resize-none"
                         disabled={isLoading}
                         placeholder="Describe the music you want to create..."
                         {...field}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            form.handleSubmit(onSubmit)();
-                          }
-                        }}
                       />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="models"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Select Models ({MUSIC_MODELS.length} available)</FormLabel>
+                    <FormControl>
+                      <ScrollArea 
+                        className="w-full rounded-md border p-4" 
+                        style={{height: `${Math.min(200, MUSIC_MODELS.length * 60)}px`}}
+                      >
+                        {MUSIC_MODELS.map((model) => (
+                          <div
+                            key={model.id}
+                            className="flex items-center space-x-2 mb-4"
+                          >
+                            <Checkbox
+                              checked={field.value.includes(model.id)}
+                              onCheckedChange={(checked) => {
+                                return checked
+                                  ? field.onChange([...field.value, model.id])
+                                  : field.onChange(
+                                      field.value.filter(
+                                        (value) => value !== model.id
+                                      )
+                                    );
+                              }}
+                            />
+                            <div className="grid gap-1.5 leading-none">
+                              <label
+                                htmlFor={`model-${model.id}`}
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                              >
+                                {model.name}
+                              </label>
+                              <p className="text-sm text-muted-foreground">
+                                {model.description}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </ScrollArea>
                     </FormControl>
                   </FormItem>
                 )}
@@ -93,7 +193,9 @@ export default function MusicPage() {
                 size="lg"
               >
                 {isLoading ? (
-                  <>Composing...</>
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Composing...
+                  </>
                 ) : (
                   <>
                     <Music className="mr-2 h-4 w-4" />
@@ -113,60 +215,70 @@ export default function MusicPage() {
               <Loader />
             </div>
           )}
-          {!music && !isLoading && <Empty label="No music composed yet." />}
-          {music && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Your Composition</h3>
-              <audio controls className="w-full" id="audioPlayer">
-                <source src={music} type="audio/wav" />
-                Your browser does not support the audio element.
-              </audio>
-              <div className="flex items-center space-x-2">
-                <label
-                  htmlFor="speedControl"
-                  className="text-sm font-medium"
-                >
-                  Speed:
-                </label>
-                <select
-                  id="speedControl"
-                  className="border p-1 rounded"
-                  onChange={(e) => {
-                    const audioPlayer = document.getElementById(
-                      "audioPlayer"
-                    ) as HTMLAudioElement;
-                    audioPlayer.playbackRate = parseFloat(e.target.value);
-                  }}
-                >
-                  <option value="0.25">0.25x</option>
-                  <option value="0.5">0.5x</option>
-                  <option value="1" selected>
-                    1x (Normal)
-                  </option>
-                  <option value="1.5">1.5x</option>
-                  <option value="2">2x</option>
-                </select>
-              </div>
-              <div>
-                <a
-                  href={music}
-                  download="composition.wav"
-                  className="text-blue-500 hover:text-blue-700 font-semibold"
-                >
-                  Download Audio
-                </a>
-              </div>
-            </div>
+          {Object.keys(musicOutputs).length === 0 && !isLoading && (
+            <Empty label="No music composed yet." />
           )}
+          {Object.entries(musicOutputs).map(([modelId, output]) => (
+            <div key={modelId} className="mb-6 p-4 bg-gray-100 rounded-lg">
+              <h3 className="text-lg font-semibold mb-2">
+                {MUSIC_MODELS.find((m) => m.id === modelId)?.name || "Unknown Model"}
+              </h3>
+              {output.error ? (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>{output.error}</AlertDescription>
+                </Alert>
+              ) : output.audio ? (
+                <>
+                  <audio
+                    ref={(el) => {
+                      audioRefs.current[modelId] = el;
+                    }}
+                    controls
+                    className="w-full mb-2"
+                  >
+                    <source src={output.audio} type="audio/wav" />
+                    Your browser does not support the audio element.
+                  </audio>
+
+                  <div className="flex items-center justify-between">
+                    <select
+                      className="border p-1 rounded"
+                      onChange={(e) =>
+                        handlePlaybackRateChange(
+                          modelId,
+                          parseFloat(e.target.value)
+                        )
+                      }
+                    >
+                      <option value="0.25">0.25x</option>
+                      <option value="0.5">0.5x</option>
+                      <option value="1" selected>1x (Normal)</option>
+                      <option value="1.5">1.5x</option>
+                      <option value="2">2x</option>
+                    </select>
+                    <a
+                      href={output.audio}
+                      download={`composition_${modelId.replace("/", "_")}.wav`}
+                      className="text-blue-500 hover:text-blue-700 font-semibold"
+                    >
+                      Download
+                    </a>
+                  </div>
+                </>
+              ) : null}
+            </div>
+          ))}
         </CardContent>
-        {music && (
+        {Object.keys(musicOutputs).length > 0 && (
           <CardFooter>
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => setMusic(undefined)}
+              onClick={() => setMusicOutputs({})}
             >
-              Clear Composition
+              <X className="mr-2 h-4 w-4" />
+              Clear All Compositions
             </Button>
           </CardFooter>
         )}
