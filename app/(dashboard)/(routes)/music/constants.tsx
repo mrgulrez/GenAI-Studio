@@ -10,7 +10,7 @@ export const MUSIC_MODELS = [
     id: "facebook/musicgen-stereo-small",
     name: "MusicGen Stereo Small",
     description: "Faster stereo music generation with good quality",
-  }
+  },
 ];
 
 export const formSchema = z.object({
@@ -21,3 +21,5 @@ export const formSchema = z.object({
     message: "At least one model must be selected",
   }),
 });
+
+export type FormValues = z.infer<typeof formSchema>;

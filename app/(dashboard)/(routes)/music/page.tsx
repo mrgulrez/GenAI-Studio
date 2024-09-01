@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -6,27 +6,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
 import { Music, Loader2 } from "lucide-react";
 import { Heading } from "@/components/heading";
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-} from "@/components/ui/form";
+import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "react-hot-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Empty } from "@/components/empty";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MUSIC_MODELS, formSchema } from "./constants";
-import { z } from "zod";
+import { MUSIC_MODELS, formSchema, FormValues } from "./constants";
 import { Loader } from "@/components/loader";
-//import { useProModal } from "@/hooks/use-pro-modal";
-
-type FormValues = z.infer<typeof formSchema>;
 
 interface MusicOutput {
   audio: string | null;
@@ -34,7 +24,6 @@ interface MusicOutput {
 }
 
 export default function MusicPage() {
- // const ProModal = useProModal();
   const router = useRouter();
   const [musicOutputs, setMusicOutputs] = useState<Record<string, MusicOutput>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -65,17 +54,23 @@ export default function MusicPage() {
     try {
       setIsLoading(true);
       setMusicOutputs({});
+
       const responses = await Promise.all(
-        values.models.map((modelId) =>
-          axios
-            .post("/api/music", { prompt: values.prompt, model: modelId })
-            .then((response) => ({ modelId, data: response.data, error: null }))
-            .catch((error) => ({
+        values.models.map(async (modelId) => {
+          try {
+            const { data } = await axios.post("/api/music", {
+              prompt: values.prompt,
+              model: modelId,
+            });
+            return { modelId, data, error: null };
+          } catch (error: any) {
+            return {
               modelId,
               data: null,
               error: error.response?.data?.error || "Failed to generate music",
-            }))
-        )
+            };
+          }
+        })
       );
 
       const newOutputs: Record<string, MusicOutput> = {};
@@ -91,14 +86,10 @@ export default function MusicPage() {
       if (successCount > 0) {
         toast.success("Music generated successfully");
       } else {
-        toast.error("Failed to generate music");  
+        toast.error("Failed to generate music");
       }
     } catch (error: any) {
-      // if(error?.response?.status === 403) {
-      //   ProModal.onOpen();
-      // } else {
       toast.error("Something went wrong. Please try again.");
-    //  }
     } finally {
       setIsLoading(false);
     }
@@ -203,7 +194,6 @@ export default function MusicPage() {
               >
                 {isLoading ? (
                   <>
-                    {" "}
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
                     Composing...
                   </>
@@ -237,7 +227,6 @@ export default function MusicPage() {
               </h3>
               {output.error ? (
                 <Alert variant="destructive">
-                  {/* <AlertTriangle className="h-4 w-4" /> */}
                   <AlertDescription>{output.error}</AlertDescription>
                 </Alert>
               ) : output.audio ? (
@@ -250,41 +239,31 @@ export default function MusicPage() {
                     className="w-full mb-2"
                   >
                     <source src={output.audio} type="audio/wav" />
-                    Your browser does not support the music element.
+                    Your browser does not support the audio element.
                   </audio>
 
                   <div className="flex items-center justify-between">
                     <select
-                      className="border p-1 rounded"
+                      className="border p-2 rounded-lg"
                       onChange={(e) =>
-                        handlePlaybackRateChange(
-                          modelId,
-                          parseFloat(e.target.value)
-                        )
+                        handlePlaybackRateChange(modelId, parseFloat(e.target.value))
                       }
                     >
-                      <option value="0.25">0.25x</option>
                       <option value="0.5">0.5x</option>
-                      <option value="1" selected>
-                        1x (Normal)
-                      </option>
+                      <option value="1" selected>1x(Normal)</option>
                       <option value="1.5">1.5x</option>
                       <option value="2">2x</option>
                     </select>
-                    <a
-                      href={output.audio}
-                      download={`composition_${modelId.replace("/", "_")}.wav`}
-                      className="text-blue-600 underline"
-                    >
-                      Download
-                    </a>
                   </div>
                 </>
-              ) : null}
+              ) : (
+                <Alert variant="destructive">
+                  <AlertDescription>No audio available.</AlertDescription>
+                </Alert>
+              )}
             </div>
           ))}
         </CardContent>
-        <CardFooter></CardFooter>
       </Card>
     </div>
   );
