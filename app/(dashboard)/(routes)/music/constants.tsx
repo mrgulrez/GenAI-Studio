@@ -21,5 +21,3 @@ export const formSchema = z.object({
     message: "At least one model must be selected",
   }),
 });
-
-export type FormValues = z.infer<typeof formSchema>;

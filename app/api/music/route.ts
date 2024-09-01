@@ -22,7 +22,8 @@ export async function POST(req: Request) {
     );
 
     if (!response.ok) {
-      console.error("[MusicAPI] Error:", await response.text());
+      const errorText = await response.text();
+      console.error("[MusicAPI] Error:", errorText);
       return NextResponse.json({ error: "Failed to generate music" }, { status: 500 });
     }
 
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
     const base64Audio = Buffer.from(audioBuffer).toString("base64");
     return NextResponse.json({ audio: `data:audio/wav;base64,${base64Audio}` });
   } catch (error) {
-    console.error("[MusicAPI] Error:", error);
+    console.error("[MusicAPI] Internal Server Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

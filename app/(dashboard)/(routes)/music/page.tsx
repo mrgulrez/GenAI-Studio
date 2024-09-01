@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -6,17 +7,26 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
 import { Music, Loader2 } from "lucide-react";
 import { Heading } from "@/components/heading";
-import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+} from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "react-hot-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Empty } from "@/components/empty";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MUSIC_MODELS, formSchema, FormValues } from "./constants";
+import { MUSIC_MODELS, formSchema } from "./constants";
+import { z } from "zod";
 import { Loader } from "@/components/loader";
+
+type FormValues = z.infer<typeof formSchema>;
 
 interface MusicOutput {
   audio: string | null;
@@ -39,14 +49,8 @@ export default function MusicPage() {
   });
 
   const toggleSelectAll = () => {
-    if (selectAll) {
-      form.setValue("models", []);
-    } else {
-      form.setValue(
-        "models",
-        MUSIC_MODELS.map((model) => model.id)
-      );
-    }
+    const updatedModels = selectAll ? [] : MUSIC_MODELS.map((model) => model.id);
+    form.setValue("models", updatedModels);
     setSelectAll(!selectAll);
   };
 
@@ -54,23 +58,17 @@ export default function MusicPage() {
     try {
       setIsLoading(true);
       setMusicOutputs({});
-
       const responses = await Promise.all(
-        values.models.map(async (modelId) => {
-          try {
-            const { data } = await axios.post("/api/music", {
-              prompt: values.prompt,
-              model: modelId,
-            });
-            return { modelId, data, error: null };
-          } catch (error: any) {
-            return {
+        values.models.map((modelId) =>
+          axios
+            .post("/api/music", { prompt: values.prompt, model: modelId })
+            .then((response) => ({ modelId, data: response.data, error: null }))
+            .catch((error) => ({
               modelId,
               data: null,
               error: error.response?.data?.error || "Failed to generate music",
-            };
-          }
-        })
+            }))
+        )
       );
 
       const newOutputs: Record<string, MusicOutput> = {};
@@ -83,12 +81,16 @@ export default function MusicPage() {
       setMusicOutputs(newOutputs);
 
       const successCount = responses.filter((r) => !r.error).length;
+      
       if (successCount > 0) {
-        toast.success("Music generated successfully");
-      } else {
-        toast.error("Failed to generate music");
+        toast.success(`Music generated successfully for ${successCount} ${successCount > 1 ? 'models' : 'model'}`);
       }
-    } catch (error: any) {
+      
+      if (successCount < responses.length) {
+        toast.error("Some models failed to generate music");
+      }
+      
+    } catch (error) {
       toast.error("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
@@ -148,7 +150,6 @@ export default function MusicPage() {
                         </span>
                       </div>
                     </FormLabel>
-
                     <FormControl>
                       <ScrollArea className="h-[200px] w-full rounded-md border p-4">
                         {MUSIC_MODELS.map((model) => (
@@ -159,13 +160,10 @@ export default function MusicPage() {
                             <Checkbox
                               checked={field.value.includes(model.id)}
                               onCheckedChange={(checked) => {
-                                return checked
-                                  ? field.onChange([...field.value, model.id])
-                                  : field.onChange(
-                                      field.value.filter(
-                                        (value) => value !== model.id
-                                      )
-                                    );
+                                const updatedModels = checked
+                                  ? [...field.value, model.id]
+                                  : field.value.filter((value) => value !== model.id);
+                                field.onChange(updatedModels);
                               }}
                             />
                             <div className="grid gap-1.5 leading-none">
@@ -194,7 +192,7 @@ export default function MusicPage() {
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Composing...
                   </>
                 ) : (
@@ -239,31 +237,37 @@ export default function MusicPage() {
                     className="w-full mb-2"
                   >
                     <source src={output.audio} type="audio/wav" />
-                    Your browser does not support the audio element.
+                    Your browser does not support the music element.
                   </audio>
-
                   <div className="flex items-center justify-between">
                     <select
-                      className="border p-2 rounded-lg"
+                      className="border p-1 rounded"
                       onChange={(e) =>
                         handlePlaybackRateChange(modelId, parseFloat(e.target.value))
                       }
                     >
+                      <option value="0.25">0.25x</option>
                       <option value="0.5">0.5x</option>
-                      <option value="1" selected>1x(Normal)</option>
+                      <option value="1" selected>
+                        1x (Normal)
+                      </option>
                       <option value="1.5">1.5x</option>
                       <option value="2">2x</option>
                     </select>
+                    <a
+                      href={output.audio}
+                      download={`composition_${modelId.replace("/", "_")}.wav`}
+                      className="text-blue-600 underline"
+                    >
+                      Download
+                    </a>
                   </div>
                 </>
-              ) : (
-                <Alert variant="destructive">
-                  <AlertDescription>No audio available.</AlertDescription>
-                </Alert>
-              )}
+              ) : null}
             </div>
           ))}
         </CardContent>
+        <CardFooter></CardFooter>
       </Card>
     </div>
   );
