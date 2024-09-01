@@ -24,7 +24,7 @@ export const resolutionOptions = [
 ];
 
 export const modelOptions = [
-  { value: "black-forest-labs/FLUX.1-dev", label: "FLUX.1" },
+  { value: "black-forest-labs/FLUX.1-dev", label: "FLUX.1-dev" },
   { value: "black-forest-labs/FLUX.1-schnell", label: "FLUX.1-schnell" },
   { value: "runwayml/stable-diffusion-v1-5", label: "Stable Diffusion v1.5" },
   { value: "stabilityai/stable-diffusion-xl-base-1.0", label: "Stable Diffusion XL Base 1.0" },
