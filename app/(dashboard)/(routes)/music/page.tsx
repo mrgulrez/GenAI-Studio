@@ -32,6 +32,8 @@ interface MusicOutput {
   error: string | null;
 }
 
+const TIMEOUT_DURATION = 60000; 
+
 export default function MusicPage() {
   const router = useRouter();
   const [musicOutputs, setMusicOutputs] = useState<Record<string, MusicOutput>>({});
@@ -63,17 +65,31 @@ export default function MusicPage() {
     try {
       setIsLoading(true);
       setMusicOutputs({});
+      
       const responses = await Promise.all(
-        values.models.map((modelId) =>
-          axios
-            .post("/api/music", { prompt: values.prompt, model: modelId })
-            .then((response) => ({ modelId, data: response.data, error: null }))
-            .catch((error) => ({
+        values.models.map(async (modelId) => {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_DURATION);
+
+            const response = await axios.post("/api/music", 
+              { prompt: values.prompt, model: modelId },
+              { signal: controller.signal }
+            );
+
+            clearTimeout(timeoutId);
+            return { modelId, data: response.data, error: null };
+          } catch (error: any) {
+            if (axios.isCancel(error)) {
+              return { modelId, data: null, error: "Request timed out" };
+            }
+            return {
               modelId,
               data: null,
               error: error.response?.data?.error || "Failed to generate music",
-            }))
-        )
+            };
+          }
+        })
       );
 
       const newOutputs: Record<string, MusicOutput> = {};
@@ -87,12 +103,13 @@ export default function MusicPage() {
 
       const successCount = responses.filter((r) => !r.error).length;
       if (successCount > 0) {
-        toast.success("Music generated successfully");
+        toast.success(`Music generated successfully for ${successCount} model(s)`);
       } else {
-        toast.error("Failed to generate music");  
+        toast.error("Failed to generate music for all models");  
       }
     } catch (error: any) {
-      toast.error("Something went wrong. Please try again.");
+      console.error("Error in music generation:", error);
+      toast.error(`Error: ${error.message || "Something went wrong. Please try again."}`);
     } finally {
       setIsLoading(false);
     }
@@ -118,7 +135,7 @@ export default function MusicPage() {
         <CardContent className="pt-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
+            <FormField
                 control={form.control}
                 name="prompt"
                 render={({ field }) => (
@@ -160,12 +177,12 @@ export default function MusicPage() {
                             className="flex items-center space-x-2 mb-4"
                           >
                             <Checkbox
-                              checked={field.value?.includes(model.id)}
+                              checked={field.value.includes(model.id)}
                               onCheckedChange={(checked) => {
                                 return checked
                                   ? field.onChange([...field.value, model.id])
                                   : field.onChange(
-                                      field.value?.filter(
+                                      field.value.filter(
                                         (value) => value !== model.id
                                       )
                                     );
