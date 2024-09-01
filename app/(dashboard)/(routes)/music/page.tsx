@@ -1,5 +1,4 @@
-"use client";
-
+"use client"
 import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -49,8 +48,14 @@ export default function MusicPage() {
   });
 
   const toggleSelectAll = () => {
-    const updatedModels = selectAll ? [] : MUSIC_MODELS.map((model) => model.id);
-    form.setValue("models", updatedModels);
+    if (selectAll) {
+      form.setValue("models", []);
+    } else {
+      form.setValue(
+        "models",
+        MUSIC_MODELS.map((model) => model.id)
+      );
+    }
     setSelectAll(!selectAll);
   };
 
@@ -81,16 +86,12 @@ export default function MusicPage() {
       setMusicOutputs(newOutputs);
 
       const successCount = responses.filter((r) => !r.error).length;
-      
       if (successCount > 0) {
-        toast.success(`Music generated successfully for ${successCount} ${successCount > 1 ? 'models' : 'model'}`);
+        toast.success("Music generated successfully");
+      } else {
+        toast.error("Failed to generate music");  
       }
-      
-      if (successCount < responses.length) {
-        toast.error("Some models failed to generate music");
-      }
-      
-    } catch (error) {
+    } catch (error: any) {
       toast.error("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
@@ -101,8 +102,6 @@ export default function MusicPage() {
     const audioElement = audioRefs.current[modelId];
     if (audioElement) {
       audioElement.playbackRate = rate;
-    } else {
-      console.error(`Audio element for ${modelId} is not initialized.`);
     }
   };
 
@@ -152,6 +151,7 @@ export default function MusicPage() {
                         </span>
                       </div>
                     </FormLabel>
+
                     <FormControl>
                       <ScrollArea className="h-[200px] w-full rounded-md border p-4">
                         {MUSIC_MODELS.map((model) => (
@@ -160,12 +160,15 @@ export default function MusicPage() {
                             className="flex items-center space-x-2 mb-4"
                           >
                             <Checkbox
-                              checked={field.value?.includes(model.id) || false}
+                              checked={field.value?.includes(model.id)}
                               onCheckedChange={(checked) => {
-                                const updatedModels = checked
-                                  ? [...(field.value || []), model.id]
-                                  : field.value.filter((value) => value !== model.id);
-                                field.onChange(updatedModels);
+                                return checked
+                                  ? field.onChange([...field.value, model.id])
+                                  : field.onChange(
+                                      field.value?.filter(
+                                        (value) => value !== model.id
+                                      )
+                                    );
                               }}
                             />
                             <div className="grid gap-1.5 leading-none">
@@ -173,10 +176,10 @@ export default function MusicPage() {
                                 htmlFor={`model-${model.id}`}
                                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                               >
-                                {model.name || 'Unknown Model'}
+                                {model.name}
                               </label>
                               <p className="text-sm text-muted-foreground">
-                                {model.description || 'No description available.'}
+                                {model.description}
                               </p>
                             </div>
                           </div>
@@ -233,27 +236,29 @@ export default function MusicPage() {
                 <>
                   <audio
                     ref={(el) => {
-                      audioRefs.current[modelId] = el;
+                      if (el) audioRefs.current[modelId] = el;
                     }}
                     controls
                     className="w-full mb-2"
-                    onError={() => toast.error('Failed to load audio.')}
                   >
                     <source src={output.audio} type="audio/wav" />
-                    Your browser does not support the music element.
+                    Your browser does not support the audio element.
                   </audio>
+
                   <div className="flex items-center justify-between">
                     <select
                       className="border p-1 rounded"
                       onChange={(e) =>
-                        handlePlaybackRateChange(modelId, parseFloat(e.target.value))
+                        handlePlaybackRateChange(
+                          modelId,
+                          parseFloat(e.target.value)
+                        )
                       }
+                      defaultValue="1"
                     >
                       <option value="0.25">0.25x</option>
                       <option value="0.5">0.5x</option>
-                      <option value="1" selected>
-                        1x (Normal)
-                      </option>
+                      <option value="1">1x (Normal)</option>
                       <option value="1.5">1.5x</option>
                       <option value="2">2x</option>
                     </select>
