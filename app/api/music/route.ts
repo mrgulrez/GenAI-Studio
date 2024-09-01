@@ -13,7 +13,7 @@ export async function POST(req: Request) {
       `https://api-inference.huggingface.co/models/${model}`,
       {
         headers: {
-          Authorization: `Bearer ${process.env.HUGGING_FACE_API_KEY}`,
+          Authorization: `Bearer ${process.env.MUSIC_API_KEY}`,
           "Content-Type": "application/json",
         },
         method: "POST",

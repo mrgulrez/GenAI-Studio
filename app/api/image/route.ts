@@ -21,7 +21,7 @@ export async function POST(req: Request) {
           {
             method: "POST",
             headers: {
-              Authorization: `Bearer ${process.env.HUGGING_FACE_API_KEY}`,
+              Authorization: `Bearer ${process.env.IMAGE_API_KEY}`,
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ inputs: prompt }),

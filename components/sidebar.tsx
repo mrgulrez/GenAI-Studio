@@ -45,7 +45,7 @@ const routes = [
     color: "text-pink-700",
   },
   {
-    name: "Text to Audio",
+    name: "Text to Music",
     icon: Music,
     href: "/music",
     color: "text-emerald-700",
@@ -92,7 +92,7 @@ export default function Sidebar() {
               className="object-contain"
             />
           </div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <h1 className="text-2xl font-bold">GenAI Studio</h1>
         </Link>
         <div className="space-y-1">
           {routes.map((route) => (

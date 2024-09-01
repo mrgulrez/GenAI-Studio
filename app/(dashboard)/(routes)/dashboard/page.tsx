@@ -68,7 +68,7 @@ const tools = [
     bgColor: "bg-pink-700/10",
   },
   {
-    label: "Text to Audio Generation",
+    label: "Text to Music Generation",
     icon: Music,
     href: "/music",
     color: "text-emerald-700",

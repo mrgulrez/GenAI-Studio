@@ -24,14 +24,10 @@ export const resolutionOptions = [
 ];
 
 export const modelOptions = [
-  { value: "runwayml/stable-diffusion-v1-5", label: "Stable Diffusion v1.5" },
-  { value: "stabilityai/stable-diffusion-xl-base-1.0", label: "Stable Diffusion XL Base 1.0" },
   { value: "black-forest-labs/FLUX.1-dev", label: "FLUX.1" },
   { value: "black-forest-labs/FLUX.1-schnell", label: "FLUX.1-schnell" },
-  { value: "XLabs-AI/flux-RealismLora", label: "flux-RealismLora" },
-  { value: "multimodalart/flux-tarot-v1", label: "flux-tarot-v1" },
+  { value: "runwayml/stable-diffusion-v1-5", label: "Stable Diffusion v1.5" },
+  { value: "stabilityai/stable-diffusion-xl-base-1.0", label: "Stable Diffusion XL Base 1.0" },
   { value: "stabilityai/sdxl-turbo", label: "sdxl-turbo" },
   { value: "stabilityai/stable-diffusion-2-1", label: "Stable Diffusion 2.1" },
-  { value: "alvdansen/flux-koda", label: "flux-koda" },
-
 ];

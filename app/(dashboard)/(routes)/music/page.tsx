@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "react-hot-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Empty } from "@/components/empty";
@@ -24,6 +24,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MUSIC_MODELS, formSchema } from "./constants";
 import { z } from "zod";
 import { Loader } from "@/components/loader";
+//import { useProModal } from "@/hooks/use-pro-modal";
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -33,6 +34,7 @@ interface MusicOutput {
 }
 
 export default function MusicPage() {
+ // const ProModal = useProModal();
   const router = useRouter();
   const [musicOutputs, setMusicOutputs] = useState<Record<string, MusicOutput>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -87,25 +89,16 @@ export default function MusicPage() {
 
       const successCount = responses.filter((r) => !r.error).length;
       if (successCount > 0) {
-        toast({
-          title: "Music generation complete",
-          description: `Successfully generated music for ${successCount} out of ${values.models.length} models.`,
-        });
+        toast.success("Music generated successfully");
       } else {
-        toast({
-          title: "Music generation failed",
-          description:
-            "Failed to generate music for all selected models. Please try again.",
-          variant: "destructive",
-        });
+        toast.error("Failed to generate music");  
       }
-    } catch (error) {
-      console.error("[MusicPage] Error:", error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      // if(error?.response?.status === 403) {
+      //   ProModal.onOpen();
+      // } else {
+      toast.error("Something went wrong. Please try again.");
+    //  }
     } finally {
       setIsLoading(false);
     }
@@ -257,7 +250,7 @@ export default function MusicPage() {
                     className="w-full mb-2"
                   >
                     <source src={output.audio} type="audio/wav" />
-                    Your browser does not support the audio element.
+                    Your browser does not support the music element.
                   </audio>
 
                   <div className="flex items-center justify-between">
