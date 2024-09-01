@@ -33,13 +33,13 @@ export const LandingHero = () => {
               <TypewriterComponent
                 options={{
                   strings: [
-                    "Chatbot Creation",
-                    "Code Generation",
-                    "Image Generation",
-                    "Music Generation",
-                    "Video Generation",
-                    "Image to Image Generation",
-                    "Image to Video Generation",
+                    "Chatbot Conversation.",
+                    "Code Generation.",
+                    "Image Generation.",
+                    "Music Generation.",
+                    "Video Generation.",
+                    "Image to Image Generation.",
+                    "Image to Video Generation.",
                   ],
                   autoStart: true,
                   loop: true,
@@ -66,18 +66,21 @@ export const LandingHero = () => {
           </motion.div>
         </div>
       </div>
-      <div className="lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2">
+      <div className="relative w-full lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2">
         {isMounted && (
-          <video
-            className="h-56 w-full object-cover sm:h-72 md:h-96 lg:w-full lg:h-full"
-            autoPlay
-            loop
-            muted
-            playsInline
-          >
-            <source src="/videos/video.mp4" type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
+          <div className="relative h-56 sm:h-72 md:h-96 lg:h-full">
+            <video
+              className="h-full w-full rounded-md shadow-none object-cover lg:rounded-md lg:shadow-lg"
+              autoPlay
+              loop
+              muted
+              playsInline
+     
+            >
+              <source src="/videos/video.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
         )}
       </div>
     </div>

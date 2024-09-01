@@ -101,6 +101,8 @@ export default function MusicPage() {
     const audioElement = audioRefs.current[modelId];
     if (audioElement) {
       audioElement.playbackRate = rate;
+    } else {
+      console.error(`Audio element for ${modelId} is not initialized.`);
     }
   };
 
@@ -158,10 +160,10 @@ export default function MusicPage() {
                             className="flex items-center space-x-2 mb-4"
                           >
                             <Checkbox
-                              checked={field.value.includes(model.id)}
+                              checked={field.value?.includes(model.id) || false}
                               onCheckedChange={(checked) => {
                                 const updatedModels = checked
-                                  ? [...field.value, model.id]
+                                  ? [...(field.value || []), model.id]
                                   : field.value.filter((value) => value !== model.id);
                                 field.onChange(updatedModels);
                               }}
@@ -171,10 +173,10 @@ export default function MusicPage() {
                                 htmlFor={`model-${model.id}`}
                                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                               >
-                                {model.name}
+                                {model.name || 'Unknown Model'}
                               </label>
                               <p className="text-sm text-muted-foreground">
-                                {model.description}
+                                {model.description || 'No description available.'}
                               </p>
                             </div>
                           </div>
@@ -235,6 +237,7 @@ export default function MusicPage() {
                     }}
                     controls
                     className="w-full mb-2"
+                    onError={() => toast.error('Failed to load audio.')}
                   >
                     <source src={output.audio} type="audio/wav" />
                     Your browser does not support the music element.
