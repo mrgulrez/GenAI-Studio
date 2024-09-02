@@ -7,8 +7,10 @@ import {
   SignedIn,
   SignedOut,
   UserButton
-} from '@clerk/nextjs'
-import { dark } from '@clerk/themes'
+} from '@clerk/nextjs';
+import { dark } from '@clerk/themes';
+import { ToastProvider } from "@/components/ui/toast";
+import { CrispProvider } from "@/components/crisp-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -28,9 +30,13 @@ export default function RootLayout({
         baseTheme: dark,
       }}
     >
-      <html lang="en">
-        <body>{children}</body>
+      <html lang="en" className={inter.className}>
+      <CrispProvider />
+        <body className="h-screen overflow-hidden">
+        <ToastProvider />
+          {children}
+        </body>
       </html>
     </ClerkProvider>
-  )
+  );
 }

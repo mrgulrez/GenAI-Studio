@@ -1,25 +1,47 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import Navbar from "@/components/navbar";
 import Sidebar from "@/components/sidebar";
 
-const DaashboardLayout = ({ children }: { children: React.ReactNode }) => {
+const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
+  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+
   return (
     <div className="h-full relative">
+      {/* Wider hover area to trigger sidebar */}
       <div
-        className="hidden h-full md:flex md:w-72
-            md:flex-col md:fixed md:inset-y-0 z-[80]
-            bg-gray-900"
+        className="fixed inset-y-0 left-0 w-6 z-20"
+        onMouseEnter={() => setIsSidebarVisible(true)}
+        onMouseLeave={() => {
+          if (!isSidebarVisible) setIsSidebarVisible(false);
+        }}
+      ></div>
+
+      {/* Sidebar */}
+      <div
+        className={`fixed inset-y-0 left-0 z-30 transform transition-transform duration-600 ease-in-out ${
+          isSidebarVisible ? "translate-x-0" : "-translate-x-full"
+        } w-72`}
+        onMouseLeave={() => setIsSidebarVisible(false)}
       >
-        <div>
-            <Sidebar />
-        </div>
+        <Sidebar />
       </div>
-      <main className="md:pl-72">
-        <Navbar />
-        {children}
-      </main>
+
+      {/* Main content wrapper */}
+      <div 
+        className={`transition-all duration-600 ease-in-out ${
+          isSidebarVisible ? "ml-72" : "ml-0"
+        } h-full`}
+      >
+        {/* Main content */}
+        <main className="w-full h-full overflow-auto">
+          <Navbar />
+          {children}
+        </main>
+      </div>
     </div>
   );
 };
 
-export default DaashboardLayout;
+export default DashboardLayout;
