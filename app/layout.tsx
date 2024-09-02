@@ -32,7 +32,7 @@ export default function RootLayout({
     >
       <html lang="en" className={inter.className}>
       <CrispProvider />
-        <body className="h-screen overflow-hidden">
+        <body>
         <ToastProvider />
           {children}
         </body>

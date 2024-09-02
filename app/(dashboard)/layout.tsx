@@ -8,7 +8,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
 
   return (
-    <div className="h-full relative">
+    <div className="min-h-screen relative">
       {/* Wider hover area to trigger sidebar */}
       <div
         className="fixed inset-y-0 left-0 w-6 z-20"
@@ -32,10 +32,10 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
       <div 
         className={`transition-all duration-600 ease-in-out ${
           isSidebarVisible ? "ml-72" : "ml-0"
-        } h-full`}
+        } min-h-screen`}
       >
         {/* Main content */}
-        <main className="w-full h-full overflow-auto">
+        <main className="w-full min-h-screen overflow-auto">
           <Navbar />
           {children}
         </main>

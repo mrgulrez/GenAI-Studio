@@ -9,7 +9,7 @@ import { Footer } from "@/components/footer";
 
 const LandingPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
+    <div className="bg-gradient-to-b from-slate-900 to-slate-800">
       <LandingNavbar />
       <main>
         <LandingHero />
