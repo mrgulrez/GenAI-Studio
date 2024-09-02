@@ -79,9 +79,10 @@ export default function CodePage() {
     } catch (error: any) {
       if(error.status.code === 500) {
         toast.error('High traffic! Please try again later.');
+      } else if(error.message === 504 ) {
+        toast.error('Request timeout or longer response! Please try again later.');
       } else {
-        console.error("[CodePage] Error:", error);
-        toast.error('Error generating code: ' + error.message)
+        toast.error('Failed to generate code! Please try again later.');
       }
     } finally {
       router.refresh();
