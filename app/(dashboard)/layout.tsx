@@ -4,11 +4,13 @@ import React, { useState } from "react";
 import Navbar from "@/components/navbar";
 import Sidebar from "@/components/sidebar";
 
+
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
 
   return (
     <div className="min-h-screen relative">
+      
       {/* Wider hover area to trigger sidebar */}
       <div
         className="fixed inset-y-0 left-0 w-6 z-20"

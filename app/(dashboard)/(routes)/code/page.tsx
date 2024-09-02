@@ -1,10 +1,10 @@
 "use client";
 
 import * as z from "zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Heading } from "@/components/heading";
-import { MessageCircle, Copy, Check, Code, Send, Trash, Download } from "lucide-react";
+import { MessageCircle, Copy, Check, Code, Send, Trash, Download, Moon, Sun, Save, RefreshCcw } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { formSchema } from "./constants";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,6 +21,9 @@ import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch"; 
+import { Toaster, toast } from 'react-hot-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
 
 type ChatCompletionMessageParam = {
   role: "user" | "assistant" | "system";
@@ -32,6 +35,8 @@ export default function CodePage() {
   const [messages, setMessages] = useState<ChatCompletionMessageParam[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
   const [latestCode, setLatestCode] = useState<string | null>(null);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false); // State for dark mode
+  const [selectedModel, setSelectedModel] = useState<string>("llama3-70b-8192"); // State for selected model
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -41,6 +46,10 @@ export default function CodePage() {
   });
 
   const isLoading = form.formState.isSubmitting;
+
+  useEffect(() => {
+    document.body.className = isDarkMode ? "dark" : "";
+  }, [isDarkMode]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
@@ -55,6 +64,7 @@ export default function CodePage() {
           role: msg.role,
           content: msg.content,
         })),
+        model: selectedModel, // Include selected model in the API request
       });
 
       const assistantMessage: ChatCompletionMessageParam = {
@@ -62,15 +72,17 @@ export default function CodePage() {
         content: response.data,
       };
 
-      setMessages((current) => [
-        ...current,
-        userMessage,
-        assistantMessage,
-      ]);
+      setMessages((current) => [...current, userMessage, assistantMessage]);
       setLatestCode(response.data); // Store the latest generated code
+      toast.success('Code generated successfully!')
       form.reset();
     } catch (error: any) {
-      console.error("[CodePage] Error:", error);
+      if(error.status.code === 500) {
+        toast.error('High traffic! Please try again later.');
+      } else {
+        console.error("[CodePage] Error:", error);
+        toast.error('Error generating code: ' + error.message)
+      }
     } finally {
       router.refresh();
     }
@@ -80,12 +92,14 @@ export default function CodePage() {
     navigator.clipboard.writeText(content);
     setCopied(content);
     setTimeout(() => setCopied(null), 2000);
+    toast.success('Code copied to clipboard!')
   };
 
   const onClear = () => {
     setMessages([]);
     setLatestCode(null); // Clear the latest code
     form.reset();
+    toast.success('Chat cleared successfully!')
   };
 
   const onDownload = () => {
@@ -103,8 +117,31 @@ export default function CodePage() {
     URL.revokeObjectURL(url);
   };
 
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode);
+  };
+
+  const onSaveSession = () => {
+    // Save the current session to local storage
+    localStorage.setItem("chatSession", JSON.stringify(messages));
+    toast.success('Session saved successfully!')
+  };
+
+  const onLoadSession = () => {
+    // Load the saved session from local storage
+    const savedMessages = localStorage.getItem("chatSession");
+    if (savedMessages) {
+      setMessages(JSON.parse(savedMessages));
+      toast.success('Session loaded successfully check chat history!')
+    } else {
+      toast.error('No saved session found!')
+    }
+
+  };
+
   return (
-    <div className="container mx-auto p-4">
+    <div className={cn("container mx-auto p-4", isDarkMode ? "dark bg-gray-900 text-white" : "bg-white text-black")}>
+      <Toaster position="top-right" />
       <Heading
         title="AI Code Assistant"
         description="Generate, analyze, and optimize code using AI."
@@ -112,6 +149,40 @@ export default function CodePage() {
         iconColor="text-green-700"
         bgColor="bg-green-700/10"
       />
+
+      {/* Model Selection Dropdown */}
+      <div className="flex justify-between items-center mt-4">
+        <div className="flex items-center space-x-4">
+          <Select onValueChange={setSelectedModel} defaultValue={selectedModel}>
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder="Select Model" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="llama3-70b-8192">Llama3-70b-8192</SelectItem>
+              <SelectItem value="llama3-8b-8192">Llama3-8b-8192</SelectItem>
+              <SelectItem value="llama-guard-3-8b">Llama-Guard-3-8b</SelectItem>
+              <SelectItem value="llama-3.1-8b-instant">Llama-3.1-8b-Instant</SelectItem>
+              <SelectItem value="llama-3.1-70b-versatile">Llama-3.1-70b-Versatile</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Other buttons */}
+        <Button onClick={onLoadSession} variant="outline" className="flex items-center space-x-2">
+          <RefreshCcw className="w-4 h-4" />
+          <span>Load Session</span>
+        </Button>
+        <Button onClick={onSaveSession} variant="outline" className="flex items-center space-x-2">
+          <Save className="w-4 h-4" />
+          <span>Save Session</span>
+        </Button>
+        <div className="flex items-center space-x-2">
+          <Sun className={cn("w-4 h-4", isDarkMode ? "text-gray-500" : "text-yellow-500")} />
+          <Switch checked={isDarkMode} onCheckedChange={toggleDarkMode} />
+          <Moon className={cn("w-4 h-4", isDarkMode ? "text-blue-500" : "text-gray-500")} />
+        </div>
+      </div>
+
       <Tabs defaultValue="generate" className="mt-8">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="generate">Generate Code</TabsTrigger>
@@ -128,14 +199,14 @@ export default function CodePage() {
                       <FormItem>
                         <FormControl>
                           <Textarea
-                            className="min-h-[100px] resize"
+                            className={cn("min-h-[100px] resize", isDarkMode ? "bg-gray-800 text-white" : "bg-gray-100")}
                             disabled={isLoading}
                             placeholder="Describe the code you want to generate..."
                             {...field}
                             onKeyDown={(e) => {
                               if (e.key === "Enter" && !e.shiftKey) {
-                                e.preventDefault(); 
-                                form.handleSubmit(onSubmit)(); 
+                                e.preventDefault();
+                                form.handleSubmit(onSubmit)();
                               }
                             }}
                           />
@@ -199,7 +270,7 @@ export default function CodePage() {
                 <ReactMarkdown
                   components={{
                     code: (props) => (
-                      <code className="block bg-gray-800 text-white p-4 rounded mt-2" {...props} />
+                      <code className={cn("block bg-gray-800 text-white p-4 rounded mt-2", isDarkMode ? "bg-gray-900" : "bg-gray-100 text-black")} {...props} />
                     ),
                   }}
                   className="text-sm leading-relaxed"
@@ -211,7 +282,7 @@ export default function CodePage() {
           )}
         </TabsContent>
 
-        <TabsContent value="chat">
+        <TabsContent value="chat" className={cn("bg-white dark:bg-gray-900 pt-6", isDarkMode ? "dark" : "")}>
           <Card>
             <CardContent className="pt-6">
               <div className="space-y-4">
@@ -233,7 +304,8 @@ export default function CodePage() {
                             "p-4 rounded-lg",
                             message.role === "user"
                               ? "bg-blue-100 text-blue-900"
-                              : "bg-gray-100 text-gray-900"
+                              : "bg-gray-100 text-gray-900",
+                            isDarkMode ? "bg-gray-800 text-white" : ""
                           )}
                         >
                           <div className="flex items-center space-x-2 mb-2">
@@ -268,7 +340,7 @@ export default function CodePage() {
                                 );
                               },
                               code: (props) => (
-                                <code className="bg-gray-200 text-gray-900 px-1 py-0.5 rounded" {...props} />
+                                <code className={cn("bg-gray-200 text-gray-900 px-1 py-0.5 rounded", isDarkMode ? "bg-gray-900 text-white" : "bg-gray-200")} {...props} />
                               ),
                             }}
                             className="text-sm leading-relaxed"

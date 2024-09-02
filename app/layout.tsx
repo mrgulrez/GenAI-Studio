@@ -10,7 +10,7 @@ import {
 } from '@clerk/nextjs';
 import { dark } from '@clerk/themes';
 import { ToastProvider } from "@/components/ui/toast";
-import { CrispProvider } from "@/components/crisp-provider";
+
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -31,7 +31,7 @@ export default function RootLayout({
       }}
     >
       <html lang="en" className={inter.className}>
-      <CrispProvider />
+      
         <body>
         <ToastProvider />
           {children}

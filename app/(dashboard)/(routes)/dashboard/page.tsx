@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { useRouter } from 'next/navigation';
+import { CrispProvider } from "@/components/crisp-provider";
 
 const tools = [
   {
@@ -78,6 +79,7 @@ export default function DashboardPage() {
   
   return (
     <div className="mb-8 space-y-4">
+      <CrispProvider />
       <h2 className="text-2xl md:text-4xl font-bold text-center text-gray-800">
         Explore the Power of AI
       </h2>
