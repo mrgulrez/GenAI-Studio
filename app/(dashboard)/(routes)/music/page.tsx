@@ -21,6 +21,7 @@ import { z } from "zod";
 import { Loader } from "@/components/loader";
 import WaveSurfer from 'wavesurfer.js';
 
+
 type FormValues = z.infer<typeof formSchema>;
 
 interface MusicOutput { 
@@ -73,9 +74,11 @@ export default function MusicPage() {
             );
 
             clearTimeout(timeoutId);
+            toast.success(`Music generated successfully for ${modelId}`);
             return { modelId, data: response.data, error: null };
           } catch (error: any) {
             if (axios.isCancel(error)) {
+              toast.error("Request timed out");
               return { modelId, data: null, error: "Request timed out" };
             }
             return {
