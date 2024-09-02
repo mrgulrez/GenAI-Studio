@@ -4,7 +4,19 @@ import * as z from "zod";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Heading } from "@/components/heading";
-import { MessageCircle, Copy, Check, Code, Send, Trash, Download, Moon, Sun, Save, RefreshCcw } from "lucide-react";
+import {
+  MessageCircle,
+  Copy,
+  Check,
+  Code,
+  Send,
+  Trash,
+  Download,
+  Moon,
+  Sun,
+  Save,
+  RefreshCcw,
+} from "lucide-react";
 import { useForm } from "react-hook-form";
 import { formSchema } from "./constants";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,9 +33,15 @@ import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch"; 
-import { Toaster, toast } from 'react-hot-toast';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
+import { Switch } from "@/components/ui/switch";
+import { Toaster, toast } from "react-hot-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"; // Import Select components
 
 type ChatCompletionMessageParam = {
   role: "user" | "assistant" | "system";
@@ -74,15 +92,17 @@ export default function CodePage() {
 
       setMessages((current) => [...current, userMessage, assistantMessage]);
       setLatestCode(response.data); // Store the latest generated code
-      toast.success('Code generated successfully!')
+      toast.success("Code generated successfully!");
       form.reset();
     } catch (error: any) {
-      if(error.status.code === 500) {
-        toast.error('High traffic! Please try again later.');
-      } else if(error.message === 504 ) {
-        toast.error('Request timeout or longer response! Please try again later.');
+      if (error.status.code === 500) {
+        toast.error("High traffic! Please try again later.");
+      } else if (error.message === 504) {
+        toast.error(
+          "Request timeout or longer response! Please try again later."
+        );
       } else {
-        toast.error('Failed to generate code! Please try again later.');
+        toast.error("Failed to generate code! Please try again later.");
       }
     } finally {
       router.refresh();
@@ -93,14 +113,14 @@ export default function CodePage() {
     navigator.clipboard.writeText(content);
     setCopied(content);
     setTimeout(() => setCopied(null), 2000);
-    toast.success('Code copied to clipboard!')
+    toast.success("Code copied to clipboard!");
   };
 
   const onClear = () => {
     setMessages([]);
     setLatestCode(null); // Clear the latest code
     form.reset();
-    toast.success('Chat cleared successfully!')
+    toast.success("Chat cleared successfully!");
   };
 
   const onDownload = () => {
@@ -125,7 +145,7 @@ export default function CodePage() {
   const onSaveSession = () => {
     // Save the current session to local storage
     localStorage.setItem("chatSession", JSON.stringify(messages));
-    toast.success('Session saved successfully!')
+    toast.success("Session saved successfully!");
   };
 
   const onLoadSession = () => {
@@ -133,15 +153,19 @@ export default function CodePage() {
     const savedMessages = localStorage.getItem("chatSession");
     if (savedMessages) {
       setMessages(JSON.parse(savedMessages));
-      toast.success('Session loaded successfully check chat history!')
+      toast.success("Session loaded successfully check chat history!");
     } else {
-      toast.error('No saved session found!')
+      toast.error("No saved session found!");
     }
-
   };
 
   return (
-    <div className={cn("container mx-auto p-4", isDarkMode ? "dark bg-gray-900 text-white" : "bg-white text-black")}>
+    <div
+      className={cn(
+        "container mx-auto p-4",
+        isDarkMode ? "dark bg-gray-900 text-white" : "bg-white text-black"
+      )}
+    >
       <Toaster position="top-right" />
       <Heading
         title="AI Code Assistant"
@@ -152,35 +176,57 @@ export default function CodePage() {
       />
 
       {/* Model Selection Dropdown */}
-      <div className="flex justify-between items-center mt-4">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col md:flex-row justify-between items-center mt-4 space-y-4 md:space-y-0">
+        <div className="flex items-center space-x-4 w-full md:w-auto">
           <Select onValueChange={setSelectedModel} defaultValue={selectedModel}>
-            <SelectTrigger className="w-64">
+            <SelectTrigger className="w-full md:w-64">
               <SelectValue placeholder="Select Model" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="llama3-70b-8192">Llama3-70b-8192</SelectItem>
               <SelectItem value="llama3-8b-8192">Llama3-8b-8192</SelectItem>
               <SelectItem value="llama-guard-3-8b">Llama-Guard-3-8b</SelectItem>
-              <SelectItem value="llama-3.1-8b-instant">Llama-3.1-8b-Instant</SelectItem>
-              <SelectItem value="llama-3.1-70b-versatile">Llama-3.1-70b-Versatile</SelectItem>
+              <SelectItem value="llama-3.1-8b-instant">
+                Llama-3.1-8b-Instant
+              </SelectItem>
+              <SelectItem value="llama-3.1-70b-versatile">
+                Llama-3.1-70b-Versatile
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {/* Other buttons */}
-        <Button onClick={onLoadSession} variant="outline" className="flex items-center space-x-2">
+        <Button
+          onClick={onLoadSession}
+          variant="outline"
+          className="flex items-center space-x-2 w-full md:w-auto"
+        >
           <RefreshCcw className="w-4 h-4" />
           <span>Load Session</span>
         </Button>
-        <Button onClick={onSaveSession} variant="outline" className="flex items-center space-x-2">
+        <Button
+          onClick={onSaveSession}
+          variant="outline"
+          className="flex items-center space-x-2 w-full md:w-auto"
+        >
           <Save className="w-4 h-4" />
           <span>Save Session</span>
         </Button>
-        <div className="flex items-center space-x-2">
-          <Sun className={cn("w-4 h-4", isDarkMode ? "text-gray-500" : "text-yellow-500")} />
+        <div className="flex items-center space-x-2 w-full md:w-auto">
+          <Sun
+            className={cn(
+              "w-4 h-4",
+              isDarkMode ? "text-gray-500" : "text-yellow-500"
+            )}
+          />
           <Switch checked={isDarkMode} onCheckedChange={toggleDarkMode} />
-          <Moon className={cn("w-4 h-4", isDarkMode ? "text-blue-500" : "text-gray-500")} />
+          <Moon
+            className={cn(
+              "w-4 h-4",
+              isDarkMode ? "text-blue-500" : "text-gray-500"
+            )}
+          />
         </div>
       </div>
 
@@ -193,14 +239,22 @@ export default function CodePage() {
           <Card>
             <CardContent className="pt-6">
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-4"
+                >
                   <FormField
                     name="prompt"
                     render={({ field }) => (
                       <FormItem>
                         <FormControl>
                           <Textarea
-                            className={cn("min-h-[100px] resize", isDarkMode ? "bg-gray-800 text-white" : "bg-gray-100")}
+                            className={cn(
+                              "min-h-[100px] resize",
+                              isDarkMode
+                                ? "bg-gray-800 text-white"
+                                : "bg-gray-100"
+                            )}
                             disabled={isLoading}
                             placeholder="Describe the code you want to generate..."
                             {...field}
@@ -231,9 +285,7 @@ export default function CodePage() {
                       className="bg-green-700 hover:bg-green-800"
                     >
                       {isLoading ? (
-                        <div className="animate-spin">
-                          ✨
-                        </div>
+                        <div className="animate-spin">✨</div>
                       ) : (
                         <Send className="w-4 h-4 mr-2" />
                       )}
@@ -271,7 +323,13 @@ export default function CodePage() {
                 <ReactMarkdown
                   components={{
                     code: (props) => (
-                      <code className={cn("block bg-gray-800 text-white p-4 rounded mt-2", isDarkMode ? "bg-gray-900" : "bg-gray-100 text-black")} {...props} />
+                      <code
+                        className={cn(
+                          "block bg-gray-800 text-white p-4 rounded mt-2",
+                          isDarkMode ? "bg-gray-900" : "bg-gray-100 text-black"
+                        )}
+                        {...props}
+                      />
                     ),
                   }}
                   className="text-sm leading-relaxed"
@@ -283,7 +341,13 @@ export default function CodePage() {
           )}
         </TabsContent>
 
-        <TabsContent value="chat" className={cn("bg-white dark:bg-gray-900 pt-6", isDarkMode ? "dark" : "")}>
+        <TabsContent
+          value="chat"
+          className={cn(
+            "bg-white dark:bg-gray-900 pt-6",
+            isDarkMode ? "dark" : ""
+          )}
+        >
           <Card>
             <CardContent className="pt-6">
               <div className="space-y-4">
@@ -310,7 +374,11 @@ export default function CodePage() {
                           )}
                         >
                           <div className="flex items-center space-x-2 mb-2">
-                            {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
+                            {message.role === "user" ? (
+                              <UserAvatar />
+                            ) : (
+                              <BotAvatar />
+                            )}
                             <span className="font-semibold">
                               {message.role === "user" ? "You" : "AI Assistant"}
                             </span>
@@ -319,10 +387,12 @@ export default function CodePage() {
                             components={{
                               pre: ({ children }) => {
                                 let codeContent = "";
-                                const childrenArray = React.Children.toArray(children);
+                                const childrenArray =
+                                  React.Children.toArray(children);
                                 const codeElement = childrenArray.find(
                                   (child): child is React.ReactElement =>
-                                    React.isValidElement(child) && child.type === "code"
+                                    React.isValidElement(child) &&
+                                    child.type === "code"
                                 );
                                 if (codeElement) {
                                   const codeChildren = React.Children.toArray(
@@ -336,12 +406,22 @@ export default function CodePage() {
                                 }
                                 return (
                                   <div className="relative bg-gray-800 text-white p-4 rounded-md my-2">
-                                    <pre className="overflow-x-auto">{children}</pre>
+                                    <pre className="overflow-x-auto">
+                                      {children}
+                                    </pre>
                                   </div>
                                 );
                               },
                               code: (props) => (
-                                <code className={cn("bg-gray-200 text-gray-900 px-1 py-0.5 rounded", isDarkMode ? "bg-gray-900 text-white" : "bg-gray-200")} {...props} />
+                                <code
+                                  className={cn(
+                                    "bg-gray-200 text-gray-900 px-1 py-0.5 rounded",
+                                    isDarkMode
+                                      ? "bg-gray-900 text-white"
+                                      : "bg-gray-200"
+                                  )}
+                                  {...props}
+                                />
                               ),
                             }}
                             className="text-sm leading-relaxed"
