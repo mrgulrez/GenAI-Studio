@@ -9,7 +9,8 @@ import {
   ArrowRight, 
   CodeIcon, 
   ImagePlusIcon, 
-  ImagePlayIcon 
+  ImagePlayIcon,
+  MicVocalIcon
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { useRouter } from 'next/navigation';
@@ -23,6 +24,14 @@ const tools = [
     href: "/conversation",
     color: "text-violet-500",
     bgColor: "bg-violet-500/10",
+  },
+  {
+    label: "Text to Lyrics Generation",
+    description: "Generate song lyrics from text prompts.",
+    icon: MicVocalIcon,
+    href: "/lyrics",
+    color: "text-yellow-700",
+    bgColor: "bg-yellow-700/10",
   },
   {
     label: "Text to Code Generation",
