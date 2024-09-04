@@ -1,36 +1,37 @@
 import { CardTitle, Card, CardHeader, CardContent } from "@/components/ui/card";
+import Image from 'next/image';
 
 const testimonials = [
   {
-    name: "John Doe",
-    avatar: "A",
-    title: "CEO, Company",
+    name: "Alice Johnson",
+    avatar: "/images/testimonial1.png",
+    title: "CEO, Tech Innovators Inc.",
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet.",
+      "Working with this team has been an absolute pleasure. Their innovative approach and dedication to excellence truly set them apart. I highly recommend their services to anyone looking to take their business to the next level.",
   },
   {
-    name: "John Doe",
-    avatar: "A",
-    title: "CEO, Company",
+    name: "Michael Smith",
+    avatar: "/images/testimonial3.png",
+    title: "CTO, Future Enterprises",
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet.",
+      "The expertise and support provided by the team were invaluable. Their technical knowledge and ability to solve complex problems made our collaboration smooth and successful.",
   },
   {
-    name: "John Doe",
-    avatar: "A",
-    title: "CEO, Company",
+    name: "Sara Williams",
+    avatar: "/images/testimonial2.png",
+    title: "Founder, Creative Solutions",
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet.",
+      "Their creativity and attention to detail exceeded my expectations. The final product was not only visually stunning but also highly functional. I couldn't be happier with the outcome.",
   },
   {
-    name: "John Doe",
-    avatar: "A",
-    title: "CEO, Company",
+    name: "David Brown",
+    avatar: "/images/testimonial4.png",
+    title: "COO, Global Tech Partners",
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet.",
+      "Their professionalism and commitment to delivering top-quality results were evident from day one. The team’s work has significantly impacted our operations, driving efficiency and growth.",
   },
-  // Add more testimonials as needed
 ];
+
 
 export const LandingContent = () => {
   return (
@@ -44,8 +45,14 @@ export const LandingContent = () => {
           <Card key={index} className="bg-[#192339] border-none text-white">
             <CardHeader>
               <CardTitle className="flex items-center gap-x-2">
-                <div className="bg-gray-500 rounded-full w-10 h-10 flex items-center justify-center">
-                  {item.avatar}
+                <div className="relative w-10 h-10">
+                  <Image 
+                    src={item.avatar} 
+                    alt={`${item.name}'s avatar`} 
+                    layout="fill"
+                    objectFit="cover"
+                    className="rounded-full"
+                  />
                 </div>
                 <div>
                   <p className="text-lg">{item.name}</p>
