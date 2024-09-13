@@ -183,7 +183,9 @@ export default function CodePage() {
               <SelectValue placeholder="Select Model" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Meta-Llama-3.1-405B">Llama-3.1-405B</SelectItem>
+              <SelectItem value="Meta-Llama-3.1-405B">
+                Llama-3.1-405B
+              </SelectItem>
               <SelectItem value="llama3-70b-8192">Llama3-70b-8192</SelectItem>
               <SelectItem value="llama3-8b-8192">Llama3-8b-8192</SelectItem>
               <SelectItem value="llama-guard-3-8b">Llama-Guard-3-8b</SelectItem>
