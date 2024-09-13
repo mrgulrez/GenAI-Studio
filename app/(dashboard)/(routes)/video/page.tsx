@@ -1,159 +1,70 @@
-// "use client";
-
-// import * as z from "zod";
-// import { useState } from "react";
-// import { useRouter } from "next/navigation";
-// import { Heading } from "@/components/heading";
-// import { VideoIcon, FilmIcon, DownloadIcon } from "lucide-react";
-// import { useForm } from "react-hook-form";
-// import { formSchema } from "./constants";
-// import { zodResolver } from "@hookform/resolvers/zod";
-// import { FormField, FormItem, Form, FormControl } from "@/components/ui/form";
-// import { Button } from "@/components/ui/button";
-// import axios from "axios";
-// import { Empty } from "@/components/empty";
-// import { Loader } from "@/components/loader";
-// import { Card, CardContent, CardFooter } from "@/components/ui/card";
-// import { Textarea } from "@/components/ui/textarea";
-// import { toast } from "@/components/ui/use-toast";
-
-// export default function VideoPage() {
-//   const router = useRouter();
-//   const [gif, setGif] = useState<string>();
-
-//   const form = useForm<z.infer<typeof formSchema>>({
-//     resolver: zodResolver(formSchema),
-//     defaultValues: {
-//       prompt: "",
-//     },
-//   });
-
-//   const isLoading = form.formState.isSubmitting;
-
-//   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-//     try {
-//       setGif(undefined);
-//       const response = await axios.post("/api/video", values);
-//       setGif(response.data.video);
-//       form.reset();
-//       toast({
-//         title: "Animation generated successfully",
-//         description: "Your GIF is ready to view!",
-//       });
-//     } catch (error: any) {
-//       console.error("[VideoPage] Error:", error);
-//       toast({
-//         title: "Error",
-//         description: "Failed to generate animation. Please try again.",
-//         variant: "destructive",
-//       });
-//     } finally {
-//       router.refresh();
-//     }
-//   };
-
-//   return (
-//     <div className="container mx-auto px-4 py-8">
-//       <Heading
-//         title="AI Animation Generator"
-//         description="Transform your ideas into animated GIFs with AI"
-//         icon={VideoIcon}
-//         iconColor="text-pink-700"
-//         bgColor="bg-pink-700/10"
-//       />
-//       <Card className="mt-8">
-//         <CardContent className="pt-6">
-//           <Form {...form}>
-//             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-//               <FormField
-//                 name="prompt"
-//                 render={({ field }) => (
-//                   <FormItem>
-//                     <FormControl>
-//                       <Textarea
-//                         className="min-h-[100px] resize-none"
-//                         disabled={isLoading}
-//                         placeholder="Describe the animation you want to create..."
-//                         {...field}
-//                       />
-//                     </FormControl>
-//                   </FormItem>
-//                 )}
-//               />
-//               <Button
-//                 type="submit"
-//                 className="w-full"
-//                 disabled={isLoading}
-//                 size="lg"
-//               >
-//                 {isLoading ? (
-//                   <>
-//                     {/* <Loader className="mr-2 h-4 w-4 animate-spin" /> */}
-//                     Generating...
-//                   </>
-//                 ) : (
-//                   <>
-//                     <FilmIcon className="mr-2 h-4 w-4" />
-//                     Generate Animation
-//                   </>
-//                 )}
-//               </Button>
-//             </form>
-//           </Form>
-//         </CardContent>
-//       </Card>
-//       <Card className="mt-8">
-//         <CardContent className="pt-6">
-//           {isLoading && (
-//             <div className="flex items-center justify-center p-8">
-//               <Loader />
-//             </div>
-//           )}
-//           {!gif && !isLoading && <Empty label="No animation generated yet." />}
-//           {gif && (
-//             <div className="space-y-4">
-//               <h3 className="text-lg font-semibold">Your Generated Animation</h3>
-//               <img src={gif} alt="Generated Animation" className="w-full rounded-lg" />
-//               <Button
-//                 onClick={() => {
-//                   const link = document.createElement("a");
-//                   link.href = gif;
-//                   link.download = "generated_animation.gif";
-//                   link.click();
-//                 }}
-//                 variant="outline"
-//                 className="w-full"
-//               >
-//                 <DownloadIcon className="mr-2 h-4 w-4" />
-//                 Download GIF
-//               </Button>
-//             </div>
-//           )}
-//         </CardContent>
-//         {gif && (
-//           <CardFooter>
-//             <Button
-//               variant="outline"
-//               className="w-full"
-//               onClick={() => setGif(undefined)}
-//             >
-//               Clear Animation
-//             </Button>
-//           </CardFooter>
-//         )}
-//       </Card>
-//     </div>
-//   );
-// }
+// pages/video-generation.tsx
+'use client'
 
 
 
+import React, { useState } from 'react';
+import axios from 'axios';
 
+export default function VideoGenerationPage() {
+  const [prompt, setPrompt] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-export default function Video() {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await axios.post('/api/video', { prompt });
+      const data = response.data;
+      setVideoUrl(data.video);
+    } catch (error) {
+      setError('Failed to Generate. This model is still under development. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center h-full">
-      This page is under development.
+    <div className="max-w-2xl mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6">AI Video Generation</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="prompt" className="block text-sm font-medium text-gray-700 mb-1">
+            Video Prompt:
+          </label>
+          <input
+            type="text"
+            id="prompt"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="Describe the video you want to generate..."
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full px-4 py-2 text-white bg-gray-600 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-500"
+        >
+          {loading ? 'Generating...' : 'Generate Video'}
+        </button>
+      </form>
+
+      {error && (
+        <p className="mt-4 text-red-600">{error}</p>
+      )}
+
+      {videoUrl && (
+        <div className="mt-6">
+          <h2 className="text-xl font-semibold mb-2">Generated Video:</h2>
+          <video controls src={videoUrl} className="w-full rounded-md shadow-lg"></video>
+        </div>
+      )}
     </div>
-  )
+  );
 }
