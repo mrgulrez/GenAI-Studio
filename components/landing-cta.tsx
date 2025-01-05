@@ -48,7 +48,7 @@ export const LandingCTA = () => {
           <div className="relative mt-16 h-80 lg:mt-8">
             <img
               className="absolute left-0 top-0 w-[57rem] max-w-none rounded-md bg-white/5 ring-1 ring-white/10"
-              src="https://tailwindui.com/img/component-images/dark-project-app-screenshot.png"
+              src="https://1drv.ms/i/c/e38f98ca880eb63c/EVzMP0aB1U5GrJacju0yt_0B8r2BeUgO_GmqpDCC7WzH-A"
               alt="App screenshot"
               width={1824}
               height={1080}
