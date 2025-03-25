@@ -41,7 +41,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"; // Import Select components
+} from "@/components/ui/select"; 
 
 type ChatCompletionMessageParam = {
   role: "user" | "assistant" | "system";
@@ -53,8 +53,8 @@ export default function CodePage() {
   const [messages, setMessages] = useState<ChatCompletionMessageParam[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
   const [latestCode, setLatestCode] = useState<string | null>(null);
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(false); // State for dark mode
-  const [selectedModel, setSelectedModel] = useState<string>("llama3-70b-8192"); // State for selected model
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+  const [selectedModel, setSelectedModel] = useState<string>("llama3-70b-8192"); 
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -82,7 +82,7 @@ export default function CodePage() {
           role: msg.role,
           content: msg.content,
         })),
-        model: selectedModel, // Include selected model in the API request
+        model: selectedModel, 
       });
 
       const assistantMessage: ChatCompletionMessageParam = {
@@ -91,7 +91,7 @@ export default function CodePage() {
       };
 
       setMessages((current) => [...current, userMessage, assistantMessage]);
-      setLatestCode(response.data); // Store the latest generated code
+      setLatestCode(response.data);
       toast.success("Code generated successfully!");
       form.reset();
     } catch (error: any) {
@@ -118,7 +118,7 @@ export default function CodePage() {
 
   const onClear = () => {
     setMessages([]);
-    setLatestCode(null); // Clear the latest code
+    setLatestCode(null);
     form.reset();
     toast.success("Chat cleared successfully!");
   };
@@ -386,6 +386,7 @@ export default function CodePage() {
                               {message.role === "user" ? "You" : "AI Assistant"}
                             </span>
                           </div>
+                          
                           <ReactMarkdown
                             components={{
                               pre: ({ children }) => {
@@ -397,6 +398,7 @@ export default function CodePage() {
                                     React.isValidElement(child) &&
                                     child.type === "code"
                                 );
+
                                 if (codeElement) {
                                   const codeChildren = React.Children.toArray(
                                     codeElement.props.children
@@ -415,6 +417,7 @@ export default function CodePage() {
                                   </div>
                                 );
                               },
+                              
                               code: (props) => (
                                 <code
                                   className={cn(

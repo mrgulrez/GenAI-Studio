@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // domains: [
-    //     "oaidalleap........."
-    // ]
+    images: {
+        domains: ["www.techmagic.co"], // Allow external images from Tailwind UI
+      },
 };
 
 export default nextConfig;

@@ -5,28 +5,28 @@ const testimonials = [
   {
     name: "Alice Johnson",
     avatar: "/images/testimonial1.png",
-    title: "CEO, Tech Innovators Inc.",
+    title: "Building, Tech Innovators Inc.",
     description:
       "Working with this team has been an absolute pleasure. Their innovative approach and dedication to excellence truly set them apart. I highly recommend their services to anyone looking to take their business to the next level.",
   },
   {
     name: "Michael Smith",
     avatar: "/images/testimonial3.png",
-    title: "CTO, Future Enterprises",
+    title: "Future Enterprises",
     description:
       "The expertise and support provided by the team were invaluable. Their technical knowledge and ability to solve complex problems made our collaboration smooth and successful.",
   },
   {
     name: "Sara Williams",
     avatar: "/images/testimonial2.png",
-    title: "Founder, Creative Solutions",
+    title: "Building, Creative Solutions",
     description:
       "Their creativity and attention to detail exceeded my expectations. The final product was not only visually stunning but also highly functional. I couldn't be happier with the outcome.",
   },
   {
     name: "David Brown",
     avatar: "/images/testimonial4.png",
-    title: "COO, Global Tech Partners",
+    title: "Employee, Global Tech Partners",
     description:
       "Their professionalism and commitment to delivering top-quality results were evident from day one. The team’s work has significantly impacted our operations, driving efficiency and growth.",
   },
@@ -37,7 +37,7 @@ export const LandingContent = () => {
   return (
     <div className="px-10 pb-20">
       <h2 className="text-center text-4xl text-white font-extrabold mb-10">
-        Testimonials
+        Testimonial
       </h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
