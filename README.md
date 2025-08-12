@@ -41,6 +41,3 @@ The development of GenAI Studio involved a mix of cutting-edge tools for a scala
 3. **Implementation**: Core integration of AI models and back-end setup involved Next.js, React, and Prisma.
 4. **Testing**: Comprehensive testing ensured accuracy, speed, and reliability across environments.
 5. **Deployment**: Vercel was used for deployment, ensuring global scalability and fast load times.
-
-### Challenges & Solutions
-A major challenge was handling simultaneous interactions with different AI models without affecting performance. I optimized API interactions to reduce latency, ensuring consistent, high-quality outputs from each model.
