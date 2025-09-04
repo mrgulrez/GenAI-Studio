@@ -6,11 +6,11 @@ import {
   SignInButton,
   SignedIn,
   SignedOut,
-  UserButton
-} from '@clerk/nextjs';
-import { dark } from '@clerk/themes';
+  UserButton,
+} from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
 import { ToastProvider } from "@/components/ui/toast";
-
+import type { BaseThemeTaggedType } from "@clerk/types"; 
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -27,13 +27,12 @@ export default function RootLayout({
   return (
     <ClerkProvider
       appearance={{
-        baseTheme: dark,
+        baseTheme: dark as BaseThemeTaggedType,
       }}
     >
       <html lang="en" className={inter.className}>
-      
         <body>
-        <ToastProvider />
+          <ToastProvider />
           {children}
         </body>
       </html>
