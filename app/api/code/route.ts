@@ -71,7 +71,7 @@ export async function POST(req: Request) {
                 },
                 ...formattedMessages,
             ],
-            model: "llama3-70b-8192",
+            model: "meta-llama/llama-4-scout-17b-16e-instruct",
             temperature: 0.7,
             max_tokens: 2048,  // Correct property name
             top_p: 1,
