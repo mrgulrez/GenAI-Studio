@@ -1,9 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import Image from "next/image";
-import { Montserrat } from "next/font/google";
-import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   MessageSquare,
@@ -11,13 +8,11 @@ import {
   VideoIcon,
   Music,
   CodeIcon,
+  Settings,
   ImagePlusIcon,
   ImagePlayIcon,
-  Settings,
 } from "lucide-react";
-import { usePathname } from "next/navigation";
 
-const montserrat = Montserrat({ weight: "600", subsets: ["latin"] });
 
 const routes = [
   {
@@ -60,7 +55,7 @@ const routes = [
     name: "Image to Image",
     icon: ImagePlusIcon,
     href: "/image2image",
-    color: "text-green-700",
+    color: "text-green-500",
   },
   {
     name: "Image to Video",
@@ -72,44 +67,50 @@ const routes = [
     name: "Settings",
     icon: Settings,
     href: "/settings",
+    color: "text-white",
   },
 ];
 
-export default function Sidebar() {
-  const pathname = usePathname();
+const Sidebar = () => {
+  const [pathname, setPathname] = useState("");
+
+  useEffect(() => {
+    setPathname(window.location.pathname);
+  }, []);
+
+  const getClassName = (currentPath) => {
+    const isActive = pathname === currentPath;
+    const baseClasses = "flex items-center px-4 py-3 w-full font-medium rounded-lg transition-colors duration-200";
+    const activeClasses = isActive ? "text-white bg-white/10" : "text-zinc-400 hover:bg-white/10";
+    return `${baseClasses} ${activeClasses}`;
+  };
 
   return (
-    <div
-      className={`space-y-4 py-4 flex flex-col min-h-screen bg-[#000102bc] text-white ${montserrat.className}`}
-    >
-      <div className="px-3 py-2 flex-1">
-        <Link href="/dashboard" className="flex items-center pl-3 mb-14">
-          <div className="relative w-16 h-16 mr-4">
-            <Image
-              fill
+    <div className={`space-y-6 py-6 flex flex-col min-h-screen bg-[#020617] text-white border-r border-gray-800`}>
+      <div className="px-6 flex-1">
+        <a href="/dashboard" className="flex items-center space-x-3 mb-12">
+          <div className="relative w-12 h-12">
+            <img
               src="/images/logo.png"
               alt="logo"
-              className="object-contain"
+              className="object-contain w-full h-full"
             />
           </div>
-          <h1 className="text-2xl font-bold">GenAI Studio</h1>
-        </Link>
-        <div className="space-y-1">
+          <h1 className="text-2xl font-extrabold">GenAI Studio</h1>
+        </a>
+        <div className="space-y-2">
           {routes.map((route) => (
-            <Link href={route.href} key={route.href}>
-              <div
-                className={cn(
-                  "flex items-center px-3 py-2 w-full justify-start font-medium rounded-md hover:bg-gray-700 transition",
-                  pathname === route.href ? "text-white bg-white/10" : "text-zinc-400"
-                )}
-              >
-                <route.icon className={cn("w-5 h-5 mr-3", route.color)} />
+            <a href={route.href} key={route.href}>
+              <div className={getClassName(route.href)}>
+                <route.icon className={`w-5 h-5 mr-4 ${route.color}`} />
                 <span className="text-lg">{route.name}</span>
               </div>
-            </Link>
+            </a>
           ))}
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default Sidebar;
