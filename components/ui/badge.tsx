@@ -328,7 +328,7 @@ export default function GenAIConversationPage(): JSX.Element {
 
   const handleDeleteMessage = (id: string) => setMessages((cur) => cur.filter((m) => m.id !== id));
 
-  const useSuggestion = (s: string) => {
+  const handleSuggestion = (s: string) => {
     form.setValue("prompt", s);
     form.handleSubmit(onSubmit)();
   };
@@ -487,7 +487,7 @@ export default function GenAIConversationPage(): JSX.Element {
                   {suggestions.map((s) => (
                     <button
                       key={s}
-                      onClick={() => useSuggestion(s)}
+                      onClick={() => handleSuggestion(s)}
                       className="text-left px-3 py-2 rounded-md hover:bg-slate-50 text-sm border"
                     >
                       {s}

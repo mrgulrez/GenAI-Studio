@@ -1,837 +1,334 @@
-"use client";
+// app/conversation/page.tsx
+'use client';
 
-import React, { useEffect, useRef, useState } from "react";
-import * as z from "zod";
-import { useRouter } from "next/navigation";
-import { Heading } from "@/components/heading";
-import {
-  MessageSquareIcon,
-  Send,
-  Mic,
-  Trash2,
-  Save,
-  Copy,
-  Speaker,
-  Zap,
-  Loader as LoaderIcon,
-  X,
-  Edit3,
-  Search,
-  Download,
-  Upload,
-  History,
-  Pin,
-  Pause,
-  Bot,
-  User,
-} from "lucide-react";
-import { useForm } from "react-hook-form";
-import { formSchema } from "./constants";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { FormField, FormItem, Form, FormControl } from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import axios from "axios";
-import { Empty } from "@/components/empty";
-import { UserAvatar } from "@/components/user.avatar";
-import { BotAvatar } from "@/components/bot-avatar";
-import ReactMarkdown from "react-markdown";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useState, useRef, useEffect } from 'react';
 
-type Role = "user" | "assistant" | "system";
-
-type Message = {
-  id: string;
-  role: Role;
-  content: string;
-  time: string;
-  status?: "sent" | "delivered" | "typing" | "error";
-};
-
-declare global {
-  interface Window {
-    webkitSpeechRecognition: any;
-    SpeechRecognition: any;
-  }
-}
-
-export default function GenAIConversationPage(): JSX.Element {
-  const router = useRouter();
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const [messages, setMessages] = useState<Message[]>(() => {
-    try {
-      if (typeof window === "undefined") return [];
-      const raw = localStorage.getItem("genai_conversation_v1");
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  });
-
+export default function ConversationPage() {
   const [isRecording, setIsRecording] = useState(false);
-  const [recognition, setRecognition] = useState<any>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isClearing, setIsClearing] = useState(false);
-  const [isEditing, setIsEditing] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showHistory, setShowHistory] = useState(false);
-  const [conversationHistory, setConversationHistory] = useState<any[]>([]);
-  const [pinnedMessages, setPinnedMessages] = useState<string[]>([]);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: { prompt: "" },
-  });
-
-  const isLoading = form.formState.isSubmitting;
-
-  const suggestions = [
-    "Summarize the last message",
-    "Give me 3 follow-up questions",
-    "Explain like I'm 5",
-    "Convert to a TODO list",
-  ];
-
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  const [conversation, setConversation] = useState<Array<{role: string, text: string, flagged?: boolean, language?: string}>>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [language, setLanguage] = useState<'english' | 'arabic'>('english');
+  const [ttsError, setTtsError] = useState<string | null>(null);
+  const [rateLimitInfo, setRateLimitInfo] = useState<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const conversationEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Load conversation history
-    try {
-      const history = localStorage.getItem("genai_conversation_history");
-      if (history) {
-        setConversationHistory(JSON.parse(history));
+    // Request microphone permission on component mount
+    async function enableStream() {
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err) {
+        console.error('Error accessing microphone:', err);
       }
-    } catch (e) {
-      console.error("Failed to load conversation history", e);
     }
-
-    // Load pinned messages
-    try {
-      const pinned = localStorage.getItem("genai_pinned_messages");
-      if (pinned) {
-        setPinnedMessages(JSON.parse(pinned));
-      }
-    } catch (e) {
-      console.error("Failed to load pinned messages", e);
-    }
+    
+    enableStream();
   }, []);
 
-  // Init Speech Recognition if available
+  // Scroll to bottom of conversation when new messages are added
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const SpeechRecognition =
-      (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-    if (!SpeechRecognition) return;
+    if (conversationEndRef.current) {
+      conversationEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [conversation]);
 
-    const sr = new SpeechRecognition();
-    sr.continuous = false;
-    sr.interimResults = false;
-    sr.lang = "en-IN";
-
-    sr.onresult = (ev: any) => {
-      try {
-        const transcript = ev.results[0][0].transcript;
-        form.setValue("prompt", transcript);
-      } catch {
-        // ignore
-      }
-    };
-
-    sr.onerror = () => setIsRecording(false);
-    sr.onend = () => setIsRecording(false);
-
-    setRecognition(sr);
-  }, [form]);
-
-  const nowTime = () =>
-    new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
-
-  const handleSave = () => {
-    setIsSaving(true);
+  const startRecording = async () => {
     try {
-      localStorage.setItem("genai_conversation_v1", JSON.stringify(messages));
-      
-      // Save to history
-      const historyItem = {
-        id: Date.now(),
-        title: messages.length > 0 
-          ? messages[0].content.slice(0, 30) + (messages[0].content.length > 30 ? "..." : "")
-          : "New Conversation",
-        timestamp: Date.now(),
-        messageCount: messages.length
-      };
-      
-      const updatedHistory = [historyItem, ...conversationHistory.filter((h: any) => 
-        h.title !== historyItem.title
-      ).slice(0, 9)];
-      
-      setConversationHistory(updatedHistory);
-      localStorage.setItem("genai_conversation_history", JSON.stringify(updatedHistory));
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setTimeout(() => setIsSaving(false), 400);
-    }
-  };
-
-  const handleClear = () => {
-    setIsClearing(true);
-    setMessages([]);
-    form.reset();
-    setTimeout(() => {
-      try {
-        localStorage.removeItem("genai_conversation_v1");
-      } catch (e) {
-        // ignore
-      }
-      setIsClearing(false);
-    }, 300);
-  };
-
-  const addMessage = (m: Message) => setMessages((cur) => [...cur, m]);
-
-  // Simple typing animation for assistant (optimistic)
-  const typeAssistant = async (fullText: string) => {
-    const id = `msg_${Date.now()}`;
-    addMessage({ id, role: "assistant", content: "", time: nowTime(), status: "typing" });
-
-    return new Promise<void>((resolve) => {
-      let i = 0;
-      const interval = Math.max(6, Math.floor(600 / Math.max(1, fullText.length / 30)));
-      const timer = window.setInterval(() => {
-        i += 2;
-        setMessages((cur) =>
-          cur.map((m) => (m.id === id ? { ...m, content: fullText.slice(0, i) } : m))
-        );
-        if (i >= fullText.length) {
-          clearInterval(timer);
-          setMessages((cur) => cur.map((m) => (m.id === id ? { ...m, status: "delivered" } : m)));
-          resolve();
-        }
-      }, interval);
-    });
-  };
-
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!values.prompt?.trim()) return;
-
-    const userMsg: Message = {
-      id: `u_${Date.now()}`,
-      role: "user",
-      content: values.prompt.trim(),
-      time: nowTime(),
-      status: "sent",
-    };
-
-    addMessage(userMsg);
-    form.reset();
-
-    try {
-      const loadingId = `loading_${Date.now()}`;
-      addMessage({ id: loadingId, role: "assistant", content: "", time: nowTime(), status: "typing" });
-
-      const resp = await axios.post(
-        "/api/conversation",
-        { messages: [...messages, userMsg] },
-        { timeout: 60000 }
-      );
-
-      setMessages((cur) => cur.filter((m) => m.id !== loadingId));
-
-      const text = resp.data.text;
-
-      await typeAssistant(text);
-    } catch (err) {
-      console.error(err);
-      const errMsg: Message = {
-        id: `err_${Date.now()}`,
-        role: "assistant",
-        content: "Sorry — something went wrong. Try again or check the console.",
-        time: nowTime(),
-        status: "error",
-      };
-      addMessage(errMsg);
-    } finally {
-      try {
-        localStorage.setItem("genai_conversation_v1", JSON.stringify(messages));
-      } catch {
-        // ignore
-      }
-      router.refresh();
-    }
-  };
-
-  const handleVoice = () => {
-    if (!recognition) return;
-    if (isRecording) {
-      recognition.stop();
-      setIsRecording(false);
-    } else {
-      try {
-        recognition.start();
-        setIsRecording(true);
-      } catch (e) {
-        console.warn(e);
-      }
-    }
-  };
-
-  const handleCopy = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch (e) {
-      console.warn(e);
-    }
-  };
-
-  const handleEditMessage = (id: string, content: string) => {
-    setIsEditing(id);
-    setEditContent(content);
-  };
-
-  const saveEditedMessage = (id: string) => {
-    setMessages(messages.map(msg => 
-      msg.id === id ? {...msg, content: editContent} : msg
-    ));
-    setIsEditing(null);
-    setEditContent("");
-  };
-
-  const togglePinMessage = (id: string) => {
-    const newPinned = pinnedMessages.includes(id)
-      ? pinnedMessages.filter(msgId => msgId !== id)
-      : [...pinnedMessages, id];
-    
-    setPinnedMessages(newPinned);
-    localStorage.setItem("genai_pinned_messages", JSON.stringify(newPinned));
-  };
-
-  // Text-to-speech: picks a good female voice when available and speaks in chunks
-  const handleSpeak = (text: string) => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-
-    const synth = window.speechSynthesis;
-
-    if (isSpeaking) {
-      synth.cancel();
-      setIsSpeaking(false);
-      return;
-    }
-
-    const preferred = [
-      "Google UK English Female",
-      "Google US English",
-      "Microsoft Zira Desktop - English (United States)",
-      "Samantha",
-      "Joanna",
-      "Nicole",
-      "Olivia",
-    ];
-
-    const loadVoices = () =>
-      new Promise<SpeechSynthesisVoice[]>((resolve) => {
-        let voices = synth.getVoices();
-        if (voices.length) return resolve(voices);
-        const handler = () => {
-          voices = synth.getVoices();
-          synth.removeEventListener("voiceschanged", handler);
-          resolve(voices);
-        };
-        synth.addEventListener("voiceschanged", handler);
-        setTimeout(() => resolve(synth.getVoices()), 700);
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          noiseSuppression: true,
+          echoCancellation: true,
+        } 
       });
-
-    (async () => {
-      try {
-        setIsSpeaking(true);
-        const voices = await loadVoices();
-
-        let voice = voices.find((v) => preferred.includes(v.name));
-
-        if (!voice) {
-          voice =
-            voices.find((v) => /female|woman/i.test(v.name)) ||
-            voices.find(
-              (v) =>
-                /en-(US|GB|IN)/i.test(v.lang) &&
-                /Google|Microsoft|Amazon|Amy|Samantha|Joanna|Nicole|Olivia/i.test(v.name)
-            ) ||
-            voices.find((v) => /^en-/i.test(v.lang)) ||
-            voices[0];
+      audioChunksRef.current = [];
+      
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+      
+      mediaRecorderRef.current = mediaRecorder;
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
         }
-
-        // Safe single-line regex (no literal newlines)
-        const chunks = text.match(/[^.!?\r\n]+[.!?\r\n]*/g) || [text];
-
-        for (const c of chunks) {
-          const chunk = c.trim();
-          if (!chunk) continue;
-
-          await new Promise<void>((resolve) => {
-            const u = new SpeechSynthesisUtterance(chunk);
-            u.lang = voice?.lang || "en-IN";
-            if (voice) u.voice = voice;
-
-            // tuned for sweet female tone
-            u.pitch = 1.15;
-            u.rate = 0.95;
-            u.volume = 1;
-
-            u.onend = () => resolve();
-            u.onerror = () => resolve();
-
-            try {
-              synth.cancel();
-            } catch {
-              // ignore
-            }
-
-            synth.speak(u);
-          });
-        }
-      } catch (e) {
-        console.warn("TTS error:", e);
-      } finally {
-        setIsSpeaking(false);
-      }
-    })();
-  };
-
-  const handleDeleteMessage = (id: string) => setMessages((cur) => cur.filter((m) => m.id !== id));
-
-  const useSuggestion = (s: string) => {
-    form.setValue("prompt", s);
-    form.handleSubmit(onSubmit)();
-  };
-
-  const filteredMessages = searchQuery
-    ? messages.filter(msg => 
-        msg.content.toLowerCase().includes(searchQuery.toLowerCase()))
-    : messages;
-
-  const loadConversation = (id: number) => {
-    // In a real app, we would load the conversation from storage
-    // This is a simplified implementation
-    const conversation = conversationHistory.find(c => c.id === id);
-    if (conversation) {
-      setShowHistory(false);
-      // Would actually load the messages here
+      };
+      
+      mediaRecorder.onstop = processAudio;
+      
+      mediaRecorder.start();
+      setIsRecording(true);
+      setTtsError(null); // Clear previous errors
+      setRateLimitInfo(null); // Clear rate limit info
+    } catch (err) {
+      console.error('Error starting recording:', err);
+      alert('Error accessing microphone. Please check permissions.');
     }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      setIsRecording(false);
+    }
+  };
+
+  const processAudio = async () => {
+    setIsProcessing(true);
+    
+    try {
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      
+      // Create FormData and append the audio blob and language
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.webm');
+      formData.append('language', language);
+      
+      // Send to our API endpoint
+      const response = await fetch('/api/conversation', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Server error: ' + response.status);
+      }
+      
+      const data = await response.json();
+      
+      // Update conversation
+      setConversation(prev => [
+        ...prev,
+        { role: 'user', text: data.userInput || "User audio message" },
+        { 
+          role: 'assistant', 
+          text: data.text, 
+          flagged: data.flagged, 
+          language: data.language 
+        }
+      ]);
+      
+      // Set TTS error if exists
+      if (data.ttsError) {
+        setTtsError(data.ttsError);
+        
+        // Check if it's a rate limit error
+        if (data.ttsError.includes('429')) {
+          setRateLimitInfo('Please wait a moment before making another request. You may be hitting API rate limits.');
+        }
+      }
+      
+      // Play the response audio if available and not flagged
+      if (data.audio && audioRef.current && !data.flagged) {
+        // Convert base64 to Blob
+        const byteCharacters = atob(data.audio);
+        const byteArrays = [];
+        for (let offset = 0; offset < byteCharacters.length; offset += 1024) {
+          const slice = byteCharacters.slice(offset, offset + 1024);
+          const byteNumbers = new Array(slice.length);
+          for (let i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          byteArrays.push(byteArray);
+        }
+        
+        const audioBlob = new Blob(byteArrays, { type: 'audio/wav' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        // Set up audio element
+        audioRef.current.src = audioUrl;
+        audioRef.current.onloadedmetadata = () => {
+          audioRef.current?.play().catch(e => console.error('Error playing audio:', e));
+        };
+        
+        // Clean up the URL when done
+        audioRef.current.onended = () => {
+          URL.revokeObjectURL(audioUrl);
+        };
+      }
+    } catch (error) {
+      console.error('Error processing audio:', error);
+      alert('Error processing audio: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const clearConversation = () => {
+    setConversation([]);
+    setTtsError(null);
+    setRateLimitInfo(null);
+  };
+
+  const toggleLanguage = () => {
+    setLanguage(prev => prev === 'english' ? 'arabic' : 'english');
+    setTtsError(null);
+    setRateLimitInfo(null);
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-indigo-50">
-      <Heading
-        title="GenAI Studio — Chat"
-        description="Interactive assistant with voice, quick prompts, and persistent conversations"
-        icon={MessageSquareIcon}
-        iconColor="text-violet-600"
-        bgColor="bg-violet-600/10"
-      />
-
-      <div className="flex-1 p-4 lg:p-6 flex flex-col gap-4 overflow-hidden">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowHistory(!showHistory)}
-              className="flex items-center gap-2"
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-indigo-600">
+            AI Conversation Assistant
+          </h1>
+          <div className="flex items-center gap-4">
+            {conversation.length > 0 && (
+              <button
+                onClick={clearConversation}
+                className="px-3 py-1 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300 transition-colors"
+              >
+                Clear Chat
+              </button>
+            )}
+            <button
+              onClick={toggleLanguage}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                language === 'english' 
+                  ? 'bg-indigo-100 text-indigo-800' 
+                  : 'bg-amber-100 text-amber-800'
+              }`}
             >
-              <History size={16} />
-              History
-            </Button>
-            <div className="text-sm text-muted-foreground hidden md:block">
-              {messages.length} messages · Saved locally
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
-              <input
-                type="text"
-                placeholder="Search messages..."
-                className="pl-8 pr-4 py-1.5 text-sm rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <Button size="sm" variant="outline" onClick={handleSave} disabled={isSaving} className="flex items-center gap-1">
-              {isSaving ? <LoaderIcon className="animate-spin h-4 w-4" /> : <Save size={16} />}
-              <span className="hidden sm:inline">Save</span>
-            </Button>
-            <Button size="sm" variant="outline" onClick={handleClear} disabled={isClearing} className="flex items-center gap-1">
-              <Trash2 size={16} /> 
-              <span className="hidden sm:inline">Clear</span>
-            </Button>
+              {language === 'english' ? 'English' : 'العربية'}
+            </button>
           </div>
         </div>
-
-        <div className="flex gap-4 h-full overflow-hidden">
-          {/* Main Chat Container */}
-          <div className="w-full lg:w-3/4 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            {/* Messages Area */}
-            <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-              {messages.length === 0 ? (
-                <Empty label="Say hi to GenAI — try a suggestion below" />
-              ) : (
-                <div className="space-y-4">
-                  {filteredMessages.map((m) => (
-                    <div
-                      key={m.id}
-                      className={cn(
-                        "p-4 rounded-xl flex items-start gap-4 group relative",
-                        m.role === "user" 
-                          ? "bg-blue-50 border border-blue-200" 
-                          : "bg-gray-50 border border-gray-200",
-                        pinnedMessages.includes(m.id) && "ring-2 ring-yellow-400"
-                      )}
-                    >
-                      <div className="flex-shrink-0">
-                        {m.role === "user" ? (
-                          <div className="h-8 w-8 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center">
-                            <User size={16} className="text-white" />
-                          </div>
-                        ) : (
-                          <div className="h-8 w-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-600 flex items-center justify-center">
-                            <Bot size={16} className="text-white" />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="text-sm font-medium text-gray-800">
-                            {m.role === "user" ? "You" : "GenAI Assistant"}
-                          </div>
-                          <div className="text-xs text-gray-500">{m.time}</div>
-                        </div>
-
-                        <div className="mt-1 text-sm prose max-w-full">
-                          {isEditing === m.id ? (
-                            <div className="space-y-2">
-                              <Textarea
-                                value={editContent}
-                                onChange={(e) => setEditContent(e.target.value)}
-                                className="min-h-[100px]"
-                                autoFocus
-                              />
-                              <div className="flex gap-2">
-                                <Button size="sm" onClick={() => saveEditedMessage(m.id)}>
-                                  Save
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  onClick={() => setIsEditing(null)}
-                                >
-                                  Cancel
-                                </Button>
-                              </div>
-                            </div>
-                          ) : (
-                            <ReactMarkdown>{m.content}</ReactMarkdown>
-                          )}
-                        </div>
-
-                        <div className="mt-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            aria-label="copy"
-                            className="text-xs p-1.5 rounded-md hover:bg-gray-200 transition-colors"
-                            onClick={() => handleCopy(m.content)}
-                          >
-                            <Copy size={14} />
-                          </button>
-
-                          {m.role === "assistant" && (
-                            <button
-                              aria-label="speak"
-                              className="text-xs p-1.5 rounded-md hover:bg-gray-200 transition-colors"
-                              onClick={() => handleSpeak(m.content)}
-                            >
-                              {isSpeaking ? <Pause size={14} /> : <Speaker size={14} />}
-                            </button>
-                          )}
-
-                          <button
-                            aria-label="edit"
-                            className="text-xs p-1.5 rounded-md hover:bg-gray-200 transition-colors"
-                            onClick={() => handleEditMessage(m.id, m.content)}
-                          >
-                            <Edit3 size={14} />
-                          </button>
-
-                          <button
-                            aria-label="pin"
-                            className="text-xs p-1.5 rounded-md hover:bg-gray-200 transition-colors"
-                            onClick={() => togglePinMessage(m.id)}
-                          >
-                            <Pin size={14} className={pinnedMessages.includes(m.id) ? "fill-yellow-400 text-yellow-400" : ""} />
-                          </button>
-
-                          <button
-                            aria-label="delete"
-                            className="text-xs p-1.5 rounded-md hover:bg-gray-200 transition-colors"
-                            onClick={() => handleDeleteMessage(m.id)}
-                          >
-                            <X size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </ScrollArea>
-
-            {/* Input Area - Fixed at Bottom */}
-            <div className="border-t border-gray-200 p-4 bg-white sticky bottom-0">
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-12 gap-2 items-end">
-                  <FormField
-                    name="prompt"
-                    render={({ field }) => (
-                      <FormItem className="col-span-12 lg:col-span-10">
-                        <FormControl>
-                          <Textarea
-                            {...field}
-                            ref={textareaRef}
-                            rows={1}
-                            placeholder="Type a message or press the mic to speak..."
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" && !e.shiftKey) {
-                                e.preventDefault();
-                                form.handleSubmit(onSubmit)();
-                              }
-                            }}
-                            className="resize-none min-h-[60px] border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                            disabled={isLoading}
-                            aria-label="Message input"
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="col-span-12 lg:col-span-2 flex justify-end items-center gap-2">
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant={isRecording ? "destructive" : "outline"}
-                      onClick={handleVoice}
-                      aria-pressed={isRecording}
-                      className="rounded-full h-10 w-10"
-                    >
-                      {isRecording ? <LoaderIcon className="animate-spin h-5 w-5" /> : <Mic size={18} />}
-                    </Button>
-
-                    <Button 
-                      type="submit" 
-                      size="icon" 
-                      disabled={isLoading} 
-                      aria-label="Send message"
-                      className="rounded-full h-10 w-10 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                    >
-                      {isLoading ? <LoaderIcon className="animate-spin h-5 w-5" /> : <Send size={18} />}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                {suggestions.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => useSuggestion(s)}
-                    className="text-left px-3 py-1.5 rounded-full text-xs bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 hover:from-blue-200 hover:to-indigo-200 transition-colors"
-                  >
-                    {s}
-                  </button>
-                ))}
+        
+        {/* Language Indicator */}
+        <div className="mb-4 text-center">
+          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+            language === 'english' 
+              ? 'bg-indigo-100 text-indigo-800' 
+              : 'bg-amber-100 text-amber-800'
+          }`}>
+            {language === 'english' ? 'Output: English' : 'الإخراج: العربية'}
+          </span>
+        </div>
+        
+        {/* TTS Error Alert */}
+        {ttsError && (
+          <div className="mb-4 p-3 bg-yellow-100 border border-yellow-300 rounded-lg text-yellow-800 text-sm">
+            <p className="font-medium">TTS Warning</p>
+            <p>Audio generation failed: {ttsError}. Showing text response only.</p>
+            {rateLimitInfo && (
+              <p className="mt-2">{rateLimitInfo}</p>
+            )}
+          </div>
+        )}
+        
+        {/* Conversation Display */}
+        <div className="h-96 overflow-y-auto mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          {conversation.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-gray-500">
+              <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
               </div>
+              <p className="text-center">Start a conversation by clicking the microphone button</p>
             </div>
-          </div>
-
-          {/* Right Sidebar */}
-          <aside className="hidden lg:block lg:w-1/4">
-            <div className="sticky top-0 h-full overflow-y-auto space-y-4">
-              {showHistory ? (
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold">Conversation History</h3>
-                    <Button variant="ghost" size="sm" onClick={() => setShowHistory(false)}>
-                      <X size={16} />
-                    </Button>
-                  </div>
-                  <div className="max-h-96 overflow-y-auto">
-                    {conversationHistory.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">No history yet</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {conversationHistory.map((conversation) => (
-                          <div 
-                            key={conversation.id} 
-                            className="p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
-                            onClick={() => loadConversation(conversation.id)}
-                          >
-                            <div className="font-medium text-sm">{conversation.title}</div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {new Date(conversation.timestamp).toLocaleDateString()} · {conversation.messageCount} messages
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+          ) : (
+            <div className="space-y-4">
+              {conversation.map((msg, index) => (
+                <div
+                  key={index}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-xs md:max-w-md p-3 rounded-lg ${
+                      msg.role === 'user'
+                        ? 'bg-indigo-100 text-indigo-800'
+                        : msg.flagged 
+                          ? 'bg-yellow-100 border border-yellow-300 text-yellow-800'
+                          : msg.language === 'arabic'
+                            ? 'bg-amber-100 text-amber-800 text-right'
+                            : 'bg-green-100 text-green-800'
+                    }`}
+                    dir={msg.language === 'arabic' ? 'rtl' : 'ltr'}
+                  >
+                    <p className="text-sm font-medium mb-1">
+                      {msg.role === 'user' ? 'You' : 'Assistant'}
+                      {msg.flagged && <span className="ml-2 text-xs">⚠️ Flagged</span>}
+                      {msg.language === 'arabic' && <span className="ml-2 text-xs">🇸🇦</span>}
+                      {msg.role === 'assistant' && ttsError && (
+                        <span className="ml-2 text-xs">🔇 No Audio</span>
+                      )}
+                    </p>
+                    <p>{msg.text}</p>
                   </div>
                 </div>
-              ) : (
-                <>
-                  <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="font-semibold">Quick Tools</div>
-                      <Zap size={18} className="text-blue-600" />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const blob = new Blob([JSON.stringify(messages, null, 2)], { type: "application/json" });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement("a");
-                          a.href = url;
-                          a.download = `genai_conversation_${Date.now()}.json`;
-                          a.click();
-                          URL.revokeObjectURL(url);
-                        }}
-                        className="text-xs h-9"
-                      >
-                        <Download size={14} className="mr-1" />
-                        Export JSON
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const text = messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
-                          const blob = new Blob([text], { type: "text/plain" });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement("a");
-                          a.href = url;
-                          a.download = `genai_conversation_${Date.now()}.txt`;
-                          a.click();
-                          URL.revokeObjectURL(url);
-                        }}
-                        className="text-xs h-9"
-                      >
-                        <Download size={14} className="mr-1" />
-                        Export Text
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          // Implement import functionality
-                          const input = document.createElement('input');
-                          input.type = 'file';
-                          input.accept = '.json';
-                          input.onchange = (e: any) => {
-                            const file = e.target.files[0];
-                            const reader = new FileReader();
-                            reader.onload = (e) => {
-                              try {
-                                const content = JSON.parse(e.target?.result as string);
-                                if (Array.isArray(content)) {
-                                  setMessages(content);
-                                }
-                              } catch (err) {
-                                console.error('Error parsing JSON file', err);
-                              }
-                            };
-                            reader.readAsText(file);
-                          };
-                          input.click();
-                        }}
-                        className="text-xs h-9"
-                      >
-                        <Upload size={14} className="mr-1" />
-                        Import
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          if (confirm("Are you sure you want to clear the conversation?")) handleClear();
-                        }}
-                        className="text-xs h-9"
-                      >
-                        <Trash2 size={14} className="mr-1" />
-                        Clear
-                      </Button>
-                    </div>
-                  </div>
-
-                  {pinnedMessages.length > 0 && (
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="font-semibold">Pinned Messages</div>
-                        <Pin size={16} className="text-yellow-500" />
-                      </div>
-                      <div className="max-h-40 overflow-y-auto">
-                        {messages
-                          .filter(m => pinnedMessages.includes(m.id))
-                          .map(m => (
-                            <div key={m.id} className="p-2 mb-2 text-sm bg-yellow-50 rounded-lg border border-yellow-200">
-                              <div className="font-medium">{m.role === "user" ? "You" : "GenAI"}</div>
-                              <div className="truncate">{m.content.slice(0, 60)}...</div>
-                            </div>
-                          ))
-                        }
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                    <div className="font-semibold mb-3">Tips & Shortcuts</div>
-                    <ul className="space-y-1.5 text-sm text-gray-600">
-                      <li className="flex items-start">
-                        <span className="text-blue-600 mr-2">•</span>
-                        Press <kbd className="px-1.5 py-0.5 text-xs bg-gray-100 rounded border">Enter</kbd> to send
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-blue-600 mr-2">•</span>
-                        Use <kbd className="px-1.5 py-0.5 text-xs bg-gray-100 rounded border">Shift+Enter</kbd> for new line
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-blue-600 mr-2">•</span>
-                        Click message actions on hover
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-blue-600 mr-2">•</span>
-                        Search through all messages
-                      </li>
-                    </ul>
-                  </div>
-                </>
-              )}
+              ))}
+              <div ref={conversationEndRef} />
             </div>
-          </aside>
+          )}
         </div>
+        
+        {/* Recording Controls */}
+        <div className="flex flex-col items-center">
+          <div className="flex justify-center items-center gap-4 mb-4">
+            <button
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={isProcessing || (rateLimitInfo !== null)}
+              className={`p-5 rounded-full text-white font-bold transition-all shadow-md ${
+                isRecording
+                  ? 'bg-red-500 hover:bg-red-600 animate-pulse'
+                  : (rateLimitInfo !== null)
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-indigo-500 hover:bg-indigo-600'
+              } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {isRecording ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+              )}
+            </button>
+            
+            {isProcessing && (
+              <div className="flex items-center bg-blue-100 text-blue-800 px-4 py-2 rounded-full">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500 mr-2"></div>
+                <span className="text-sm">Processing...</span>
+              </div>
+            )}
+          </div>
+          
+          <p className="text-sm text-gray-500 text-center">
+            {isRecording 
+              ? "Recording... Speak now" 
+              : rateLimitInfo
+                ? "Please wait before making another request"
+                : "Click the microphone to start a conversation"}
+          </p>
+        </div>
+        
+        {/* Info panel */}
+        <div className="mt-6 p-4 bg-indigo-50 rounded-lg text-sm border border-indigo-100">
+          <p className="font-medium text-indigo-800 mb-1">How it works</p>
+          <ul className="list-disc list-inside text-indigo-700 space-y-1">
+            <li>Your speech is converted to text using Whisper</li>
+            <li>Content is checked for safety</li>
+            <li>AI generates a response using a language model</li>
+            <li>Response is converted to speech using {language === 'english' ? 'PlayAI TTS (English)' : 'PlayAI TTS Arabic'}</li>
+            {rateLimitInfo && (
+              <li className="text-yellow-700 font-medium">Note: Currently experiencing API rate limits</li>
+            )}
+          </ul>
+        </div>
+        
+        {/* Hidden audio element for playing responses */}
+        <audio ref={audioRef} className="hidden" />
       </div>
     </div>
   );

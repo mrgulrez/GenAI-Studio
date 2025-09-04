@@ -1,82 +1,250 @@
-import { NextResponse } from "next/server";
-import Groq from "groq-sdk";
+// app/api/conversation/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { Groq } from 'groq-sdk';
+import fs from 'fs';
+import path from 'path';
+import { tmpdir } from 'os';
 
-const systemPrompt = `
-You are an expert customer support assistant for GenAI Studio, an advanced AI-powered platform based in India, founded in 2024 by Dil Nashin, with Gulrez Alam as CEO and Mazin Shamshad as CTO. GenAI Studio enables users to generate high-quality text, images, videos, and music using cutting-edge AI models, including Llama3 for text, FLUX.1-dev, FLUX.1-schnell, Stable Diffusion v1.5, Stable Diffusion XL Base 1.0, SDXL-Turbo, Stable Diffusion 2.1 for images, and Facebook MusicGen Small Stereo for music.
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY
+});
 
-**Your Role and Responsibilities**:
-- Provide clear, concise, and accurate responses to user queries about GenAI Studio’s features, workflows, and troubleshooting. 🛠️
-- Use a professional, empathetic, and engaging tone to make users feel supported and valued.
-- If a query is unclear, politely request clarification to ensure an accurate response. ❓
-- Offer step-by-step guidance for complex tasks, such as generating content or adjusting parameters.
-- Include examples to illustrate processes (e.g., a sample prompt for music generation: "Create an upbeat jazz track with a piano lead, 120 BPM, 30 seconds long").
-- Suggest related features or tools to enhance the user experience (e.g., recommend exploring FLUX.1 for faster image generation).
-- Promote GenAI Studio’s unique capabilities, such as its diverse model offerings and customization options.
-- Encourage users to experiment with different tools and settings to achieve personalized results.
-- Provide links to relevant tutorials or resources (e.g., GenAI Studio’s documentation at https://gen-ai-studio-eight.vercel.app/coversation).
-- If unable to resolve an issue, direct users to contact human support at egulrezalam@gmail.com. 📧
-- Conclude responses by inviting feedback and encouraging further questions about GenAI Studio.
+// System prompt for the assistant
+const SYSTEM_PROMPT = `You are a helpful, friendly AI assistant. Provide concise, helpful responses to user queries. 
+Be conversational but professional. If asked about controversial or inappropriate topics, politely decline to answer. 
+Keep responses under 2-3 sentences for natural conversation flow.`;
 
-**Example Queries You May Handle**:
-- How do I generate an image using a text prompt?
-- What file formats are supported for video exports?
-- How can I customize the style of generated text?
-- Why is my music output not meeting expectations, and how can I improve it?
-- Can I export generated content in multiple formats?
-- How do I fine-tune parameters for more tailored results?
-- What are the differences between GenAI Studio’s AI models?
-- What subscription plans are available, and what are their benefits?
-
-**Best Practices**:
-- Maintain a professional yet approachable tone to ensure a positive user experience.
-- Anticipate user needs by offering proactive tips (e.g., “Try adjusting the temperature parameter for more creative text outputs”).
-- Ensure responses are accurate, timely, and actionable to empower users to maximize GenAI Studio’s potential. ⏱️
-- Use emojis sparingly to enhance friendliness without compromising professionalism.
-
-Your goal is to deliver exceptional support, helping users fully leverage GenAI Studio’s innovative tools to create outstanding content. Always aim to inspire confidence and encourage exploration of the platform’s capabilities.
-`;
-
-export async function POST(req: Request) {
-    const groq = new Groq({
-        apiKey: process.env.GROQ_API_KEY,
-    });
-    
-    try {
-        // Await the request.json() call
-        const body = await req.json();
-        const { messages } = body;
-
-        if (!Array.isArray(messages) || messages.length === 0) {
-            return new NextResponse("Messages must be a non-empty array", { status: 400 });
+// Function to check if content is safe
+async function isContentSafe(text: string): Promise<{safe: boolean, reason?: string}> {
+  try {
+    // Use a different model for content moderation
+    const response = await groq.chat.completions.create({
+      model: "llama-3.1-8b-instant",
+      messages: [
+        {
+          role: "system",
+          content: "You are a content safety checker. Analyze the text and determine if it contains harmful, inappropriate, or unsafe content. Respond with only 'safe' or 'unsafe'."
+        },
+        {
+          role: "user",
+          content: text
         }
+      ],
+      max_tokens: 10,
+      temperature: 0.1
+    });
 
-        const formattedMessages = messages.map(msg => ({
-            role: msg.role,
-            content: msg.content
-        }));
-
-        const completion = await groq.chat.completions.create({
-            messages: [
-                {
-                    role: "system",
-                    content: systemPrompt,
-                },
-                ...formattedMessages,
-            ],
-            model: "meta-llama/llama-4-scout-17b-16e-instruct",
-            temperature: 0.7,
-            max_tokens: 1024,
-            top_p: 1,
-            stream: false, 
-            stop: null,
-        });
-
-        const responseContent = completion.choices[0]?.message?.content || "No response generated";
-        
-        // Return a proper JSON response
-        return NextResponse.json({ text: responseContent });
-    } catch (error) {
-        console.error("[ConversationAPI] Error:", error);
-        return new NextResponse("Internal Server Error", { status: 500 });
+    const result = response.choices[0]?.message?.content?.toLowerCase() || '';
+    
+    if (result.includes('safe')) {
+      return { safe: true };
+    } else if (result.includes('unsafe')) {
+      return { 
+        safe: false, 
+        reason: 'Content flagged as inappropriate' 
+      };
     }
+    
+    // If we can't determine, use a simpler regex-based check as fallback
+    const unsafePatterns = [
+      /(sex|porn|nude|explicit)/i,
+      /(violence|kill|murder|harm)/i,
+      /(hate|racist|discriminat)/i,
+      /(illegal|drugs|weapon)/i
+    ];
+    
+    const isUnsafe = unsafePatterns.some(pattern => pattern.test(text));
+    return { safe: !isUnsafe, reason: isUnsafe ? 'Content matches unsafe patterns' : undefined };
+    
+  } catch (error) {
+    console.error('Error in content safety check:', error);
+    // Fallback to simple regex check if API call fails
+    const unsafePatterns = [
+      /(sex|porn|nude|explicit)/i,
+      /(violence|kill|murder|harm)/i,
+      /(hate|racist|discriminat)/i,
+      /(illegal|drugs|weapon)/i
+    ];
+    
+    const isUnsafe = unsafePatterns.some(pattern => pattern.test(text));
+    return { safe: !isUnsafe, reason: isUnsafe ? 'Content matches unsafe patterns' : undefined };
+  }
+}
+
+// Function to generate AI response using a language model
+async function generateAIResponse(userInput: string): Promise<string> {
+  try {
+    const response = await groq.chat.completions.create({
+      model: "llama-3.1-8b-instant",
+      messages: [
+        {
+          role: "system",
+          content: SYSTEM_PROMPT
+        },
+        {
+          role: "user",
+          content: userInput
+        }
+      ],
+      max_tokens: 150,
+      temperature: 0.7,
+      top_p: 0.9
+    });
+
+    return response.choices[0]?.message?.content || "I'm not sure how to respond to that.";
+  } catch (error) {
+    console.error('Error generating AI response:', error);
+    return "I encountered an error processing your request. Please try again.";
+  }
+}
+
+// Function to generate speech using TTS with retry logic
+async function generateSpeech(text: string, language: string): Promise<{audio: Buffer | null, error: string | null}> {
+  const maxRetries = 3;
+  let retryCount = 0;
+  
+  while (retryCount < maxRetries) {
+    try {
+      // Configure TTS based on language selection
+      const ttsConfig: any = {
+        model: language === 'arabic' ? 'playai-tts-arabic' : 'playai-tts',
+        response_format: 'wav',
+        input: text.substring(0, 2000) // Limit input length to avoid API issues
+      };
+
+      // Add voice parameter only for supported models
+      if (language === 'arabic') {
+        ttsConfig.voice = 'Hala-PlayAI'; // Arabic voice
+      } else {
+        ttsConfig.voice = 'Aaliyah-PlayAI'; // English voice
+      }
+
+      // Generate speech from response text using the Groq API directly
+      const ttsResponse = await fetch('https://api.groq.com/openai/v1/audio/speech', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(ttsConfig)
+      });
+
+      if (ttsResponse.status === 429) {
+        // Rate limited - wait and retry
+        const retryAfter = parseInt(ttsResponse.headers.get('Retry-After') || '5');
+        console.log(`Rate limited. Retrying after ${retryAfter} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+        retryCount++;
+        continue;
+      }
+
+      if (!ttsResponse.ok) {
+        const errorText = await ttsResponse.text();
+        console.error('TTS API error details:', ttsResponse.status, errorText);
+        return { audio: null, error: `TTS API error: ${ttsResponse.status} ${ttsResponse.statusText}` };
+      }
+
+      // Convert response to buffer
+      const audioBuffer = Buffer.from(await ttsResponse.arrayBuffer());
+      return { audio: audioBuffer, error: null };
+    } catch (error) {
+      console.error('Error in TTS generation:', error);
+      retryCount++;
+      
+      if (retryCount >= maxRetries) {
+        return { audio: null, error: `TTS generation failed after ${maxRetries} attempts: ${error}` };
+      }
+      
+      // Wait before retrying (exponential backoff)
+      const waitTime = Math.pow(2, retryCount) * 1000;
+      console.log(`Retrying TTS in ${waitTime}ms...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+  }
+  
+  return { audio: null, error: 'TTS generation failed after multiple attempts' };
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const formData = await request.formData();
+    const audioFile = formData.get('audio') as File;
+    const language = formData.get('language') as string || 'english';
+    
+    if (!audioFile) {
+      return NextResponse.json({ error: 'No audio file provided' }, { status: 400 });
+    }
+
+    // Convert File to Buffer
+    const bytes = await audioFile.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    
+    // Create a temporary file
+    const tempDir = tmpdir();
+    const inputFilePath = path.join(tempDir, `input-${Date.now()}.m4a`);
+    fs.writeFileSync(inputFilePath, buffer);
+
+    // Transcribe audio with Whisper
+    const transcription = await groq.audio.transcriptions.create({
+      file: fs.createReadStream(inputFilePath),
+      model: "whisper-large-v3-turbo",
+      response_format: "verbose_json",
+    });
+
+    // Clean up input file
+    fs.unlinkSync(inputFilePath);
+
+    const userInput = transcription.text;
+    
+    // Check if the transcribed content is safe
+    const safetyCheck = await isContentSafe(userInput);
+    
+    if (!safetyCheck.safe) {
+      return NextResponse.json({
+        text: `I cannot respond to that request. It appears to contain inappropriate content.`,
+        flagged: true,
+        userInput: userInput
+      });
+    }
+
+    // Generate AI response using the language model
+    const responseText = await generateAIResponse(userInput);
+
+    // Generate speech from response text
+    const { audio: audioBuffer, error: ttsError } = await generateSpeech(responseText, language);
+    
+    if (ttsError) {
+      console.error('TTS failed, returning text only:', ttsError);
+      return NextResponse.json({
+        text: responseText,
+        userInput: userInput,
+        language: language,
+        ttsError: ttsError
+      });
+    }
+
+    // Create output file path
+    const outputFilePath = path.join(tempDir, `output-${Date.now()}.wav`);
+    fs.writeFileSync(outputFilePath, audioBuffer as Buffer);
+
+    // Read the file and convert to base64 for easy transmission
+    const base64Audio = fs.readFileSync(outputFilePath).toString('base64');
+    
+    // Clean up output file
+    fs.unlinkSync(outputFilePath);
+
+    return NextResponse.json({
+      text: responseText,
+      audio: base64Audio,
+      userInput: userInput,
+      language: language
+    });
+
+  } catch (error) {
+    console.error('Error processing audio:', error);
+    return NextResponse.json(
+      { error: 'Failed to process audio' }, 
+      { status: 500 }
+    );
+  }
 }

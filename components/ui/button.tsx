@@ -1,8 +1,8 @@
-import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
-import { cva, type VariantProps } from "class-variance-authority"
+import * as React from "react";
+import { Slot } from "@radix-ui/react-slot";
+import { cva, type VariantProps } from "class-variance-authority";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
@@ -31,26 +31,36 @@ const buttonVariants = cva(
       size: "default",
     },
   }
-)
+);
 
+// explicit variant props type
+type CVAProps = VariantProps<typeof buttonVariants>;
+
+// Use ComponentPropsWithoutRef<'button'> to match intrinsic button attributes
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
-  asChild?: boolean
+  extends React.ComponentPropsWithoutRef<"button">,
+    CVAProps {
+  asChild?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button"
+    // Tell TypeScript this can be a string tag or a component
+    const Comp: React.ElementType = asChild ? Slot : "button";
+
+    // Note: Slot may accept different ref types; cast ref when passing to Comp to avoid TS complaints
     return (
       <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
-        ref={ref}
+        // `cn` merges classes; buttonVariants returns the right classes for variant/size
+        className={cn(buttonVariants({ variant, size }), className)}
+        // cast ref to any so TS doesn't complain when Comp is Slot
+        ref={ref as any}
         {...props}
       />
-    )
+    );
   }
-)
-Button.displayName = "Button"
+);
 
-export { Button, buttonVariants }
+Button.displayName = "Button";
+
+export { Button, buttonVariants };

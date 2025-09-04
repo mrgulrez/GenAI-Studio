@@ -78,7 +78,7 @@ const Sidebar = () => {
     setPathname(window.location.pathname);
   }, []);
 
-  const getClassName = (currentPath) => {
+  const getClassName = (currentPath: string) => {
     const isActive = pathname === currentPath;
     const baseClasses = "flex items-center px-4 py-3 w-full font-medium rounded-lg transition-colors duration-200";
     const activeClasses = isActive ? "text-white bg-white/10" : "text-zinc-400 hover:bg-white/10";
