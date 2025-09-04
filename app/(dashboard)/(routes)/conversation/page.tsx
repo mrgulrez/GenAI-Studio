@@ -408,7 +408,7 @@ export default function GenAIConversationPage(): JSX.Element {
 
   const handleDeleteMessage = (id: string) => setMessages((cur) => cur.filter((m) => m.id !== id));
 
-  const useSuggestion = (s: string) => {
+  const handleSuggestion = (s: string) => {
     form.setValue("prompt", s);
     form.handleSubmit(onSubmit)();
   };
@@ -651,14 +651,14 @@ export default function GenAIConversationPage(): JSX.Element {
 
               <div className="mt-3 flex flex-wrap gap-2">
                 {suggestions.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => useSuggestion(s)}
-                    className="text-left px-3 py-1.5 rounded-full text-xs bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 hover:from-blue-200 hover:to-indigo-200 transition-colors"
-                  >
-                    {s}
-                  </button>
-                ))}
+                    <button
+                      key={s}
+                      onClick={() => handleSuggestion(s)}
+                      className="text-left px-3 py-1.5 rounded-full text-xs bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 hover:from-blue-200 hover:to-indigo-200 transition-colors"
+                    >
+                      {s}
+                    </button>
+                  ))}
               </div>
             </div>
           </div>
