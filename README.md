@@ -1,4 +1,3 @@
-
 # GenAI Studio
 
 GenAI Studio is a modern, AI-powered platform for creative professionals and developers. It enables users to generate images, music, and code using natural language prompts, powered by state-of-the-art AI models and a robust tech stack.
