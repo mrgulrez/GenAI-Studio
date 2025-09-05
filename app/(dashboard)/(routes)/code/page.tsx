@@ -391,40 +391,32 @@ export default function CodePage() {
                             components={{
                               pre: ({ children }) => {
                                 let codeContent = "";
-                                const childrenArray =
-                                  React.Children.toArray(children);
+                                const childrenArray = React.Children.toArray(children);
                                 const codeElement = childrenArray.find(
                                   (child): child is React.ReactElement =>
-                                    React.isValidElement(child) &&
-                                    child.type === "code"
+                                    React.isValidElement(child) && child.type === "code"
                                 );
 
                                 if (codeElement) {
+                                  // Assert the type of codeElement.props to include children
                                   const codeChildren = React.Children.toArray(
-                                    codeElement.props.children
+                                    (codeElement.props as { children?: React.ReactNode }).children
                                   );
                                   codeContent = codeChildren
-                                    .map((child) =>
-                                      typeof child === "string" ? child : ""
-                                    )
+                                    .map((child) => (typeof child === "string" ? child : ""))
                                     .join("");
                                 }
                                 return (
                                   <div className="relative bg-gray-800 text-white p-4 rounded-md my-2">
-                                    <pre className="overflow-x-auto">
-                                      {children}
-                                    </pre>
+                                    <pre className="overflow-x-auto">{children}</pre>
                                   </div>
                                 );
                               },
-                              
                               code: (props) => (
                                 <code
                                   className={cn(
                                     "bg-gray-200 text-gray-900 px-1 py-0.5 rounded",
-                                    isDarkMode
-                                      ? "bg-gray-900 text-white"
-                                      : "bg-gray-200"
+                                    isDarkMode ? "bg-gray-900 text-white" : "bg-gray-200"
                                   )}
                                   {...props}
                                 />

@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^5.5.2",
-    "@clerk/themes": "^2.1.21",
+    "@clerk/themes": "^2.4.17",
     "@hookform/resolvers": "^3.10.0",
     "@huggingface/inference": "^2.8.0",
     "@radix-ui/react-avatar": "^1.1.0",
@@ -41,7 +41,7 @@
     "next": "^15.5.2",
     "npm": "^10.8.2",
     "openai": "^4.56.0",
-    "react": "^18",
+    "react": "^18.3.1",
     "react-dom": "^18",
     "react-hook-form": "^7.62.0",
     "react-hot-toast": "^2.4.1",
@@ -59,7 +59,7 @@
   },
   "devDependencies": {
     "@types/node": "^20",
-    "@types/react": "^18",
+    "@types/react": "^19.1.12",
     "@types/react-dom": "^18",
     "eslint": "^8",
     "eslint-config-next": "14.2.6",

@@ -1,16 +1,12 @@
+// app/layout.tsx (drop-in replacement)
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import {
   ClerkProvider,
-  SignInButton,
-  SignedIn,
-  SignedOut,
-  UserButton
-} from '@clerk/nextjs';
-import { dark } from '@clerk/themes';
+} from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
 import { ToastProvider } from "@/components/ui/toast";
-
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -27,13 +23,13 @@ export default function RootLayout({
   return (
     <ClerkProvider
       appearance={{
-        baseTheme: dark,
+        // Quick safe cast to bypass the type mismatch:
+        baseTheme: dark as unknown as any,
       }}
     >
       <html lang="en" className={inter.className}>
-      
         <body>
-        <ToastProvider />
+          <ToastProvider />
           {children}
         </body>
       </html>
