@@ -5,7 +5,6 @@ import "./globals.css";
 import {
   ClerkProvider,
 } from "@clerk/nextjs";
-import { dark } from "@clerk/themes";
 import { ToastProvider } from "@/components/ui/toast";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -21,12 +20,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider
-      appearance={{
-        // Quick safe cast to bypass the type mismatch:
-        baseTheme: dark as unknown as any,
-      }}
-    >
+    <ClerkProvider>
       <html lang="en" className={inter.className}>
         <body>
           <ToastProvider />
